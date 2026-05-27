@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RepairStatus {
+  PENDING
+  DIAGNOSING
+  IN_PROGRESS
+  WAITING_PARTS
+  READY_FOR_PICKUP
+  COMPLETED
+  DELIVERED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum UserRole {
+  ADMIN
+  TECHNICIAN
+  RECEPTIONIST
+}
+
+enum EquipmentType {
+  LAPTOP
+  DESKTOP
+  SMARTPHONE
+  TABLET
+  CONSOLE
+  PRINTER
+  MONITOR
+  AUDIO
+  OTHER
+}
+
+model User {
+  id         String   @id @default(cuid())
+  clerkId    String   @unique
+  email      String   @unique
+  name       String
+  role       UserRole @default(RECEPTIONIST)
+  avatarUrl  String?
+  phone      String?
+  isActive   Boolean  @default(true)
+  businessId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  assignedOrders RepairOrder[] @relation("AssignedTechnician")
+
+  @@map("users")
+}
+
+model Client {
+  id         String   @id @default(cuid())
+  name       String
+  email      String?
+  phone      String
+  documentId String? @unique
+  address    String?
+  notes      String?
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  equipments Equipment[]
+  orders     RepairOrder[]
+
+  @@map("clients")
+}
+
+model Equipment {
+  id           String   @id @default(cuid())
+  clientId     String
+  type         EquipmentType
+  brand        String
+  model        String
+  serialNumber String?
+  password     String?
+  accessories  String?
+  condition    String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  client Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  orders RepairOrder[]
+
+  @@map("equipments")
+}
+
+model RepairOrder {
+  id            String       @id @default(cuid())
+  orderNumber   String       @unique
+  clientId      String
+  equipmentId   String
+  reportedIssue String
+  diagnosis     String?
+  status        RepairStatus @default(PENDING)
+  priority      Priority     @default(MEDIUM)
+  estimatedCost Decimal      @default(0)
+  totalCost     Decimal      @default(0)
+  deposit       Decimal      @default(0)
+  notes         String?
+  internalNotes String?
+  assignedTo    String?
+  startDate     DateTime?
+  completedDate DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  client   Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  technician User?   @relation("AssignedTechnician", fields: [assignedTo], references: [clerkId])
+  statusHistory StatusHistory[]
+  payments     Payment[]
+
+  @@map("repair_orders")
+}
+
+model StatusHistory {
+  id            String       @id @default(cuid())
+  repairOrderId String
+  status        RepairStatus
+  note          String?
+  createdBy     String?
+  createdAt     DateTime     @default(now())
+
+  repairOrder RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
+
+  @@map("status_history")
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  repairOrderId String
+  amount        Decimal
+  method        String?
+  reference     String?
+  note          String?
+  createdAt     DateTime @default(now())
+
+  repairOrder RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String?
+  userId    String?
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
