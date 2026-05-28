@@ -95,8 +95,12 @@ export async function sendMessage(to, message) {
     logger.info('WhatsApp enviado', { to: number });
     return { success: true, id: result.id };
   } catch (err) {
-    logger.error('Error enviando WhatsApp', { error: err.message, to });
-    return { success: false, error: err.message };
+    const msg = err?.message || '';
+    logger.error('Error enviando WhatsApp', { error: msg, to });
+    if (msg.includes('cannot send to same') || msg.length < 10) {
+      return { success: false, error: '¿Estás intentando enviarte un mensaje a ti mismo? WhatsApp no permite enviar notificaciones al mismo número conectado. Usa un número de cliente distinto.' };
+    }
+    return { success: false, error: msg || 'Error al enviar WhatsApp' };
   }
 }
 

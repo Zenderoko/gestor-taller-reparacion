@@ -31,6 +31,8 @@ export const clientsApi = {
   create: (data) => api.post('/clients', data),
   update: (id, data) => api.put(`/clients/${id}`, data),
   delete: (id) => api.delete(`/clients/${id}`),
+  archive: (id) => api.put(`/clients/${id}/archive`),
+  unarchive: (id) => api.put(`/clients/${id}/unarchive`),
   getHistory: (id) => api.get(`/clients/${id}/history`),
 };
 
@@ -41,6 +43,8 @@ export const equipmentApi = {
   create: (data) => api.post('/equipment', data),
   update: (id, data) => api.put(`/equipment/${id}`, data),
   delete: (id) => api.delete(`/equipment/${id}`),
+  archive: (id) => api.put(`/equipment/${id}/archive`),
+  unarchive: (id) => api.put(`/equipment/${id}/unarchive`),
 };
 
 // Orders
@@ -53,6 +57,9 @@ export const ordersApi = {
   addPayment: (id, data) => api.post(`/orders/${id}/payments`, data),
   sendWhatsApp: (id) => api.post(`/orders/${id}/whatsapp`),
   downloadPdf: (id) => api.get(`/orders/${id}/pdf`, { responseType: 'blob' }),
+  archive: (id) => api.put(`/orders/${id}/archive`),
+  unarchive: (id) => api.put(`/orders/${id}/unarchive`),
+  delete: (id) => api.delete(`/orders/${id}`),
 };
 
 // Dashboard

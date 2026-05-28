@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientsApi } from '@/lib/api';
 import { formatDate, formatPhone, formatCurrency } from '@/lib/utils';
-import { ArrowLeft, Phone, Mail, MapPin, FileText, Wrench, ChevronRight, Plus, Pencil } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, FileText, Wrench, ChevronRight, Plus, Pencil, Archive, Trash2, RotateCcw } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Loader from '@/components/shared/Loader';
@@ -36,6 +36,36 @@ export default function ClientDetail() {
     onError: (err) => toast.error(err.message),
   });
 
+  const archiveMutation = useMutation({
+    mutationFn: () => clientsApi.archive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client', id] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      toast.success('Cliente archivado');
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const unarchiveMutation = useMutation({
+    mutationFn: () => clientsApi.unarchive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client', id] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      toast.success('Cliente restaurado');
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => clientsApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      toast.success('Cliente eliminado permanentemente');
+      navigate('/clients');
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   if (isLoading) return <Loader />;
   if (!data?.data) return <p className="text-center py-20 text-secondary-500">Cliente no encontrado</p>;
 
@@ -59,7 +89,7 @@ export default function ClientDetail() {
                 {client.address && <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" />{client.address}</span>}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button variant="secondary" onClick={() => {
                 reset({
                   name: client.name,
@@ -75,6 +105,22 @@ export default function ClientDetail() {
               </Button>
               <Button onClick={() => navigate('/orders/new', { state: { clientId: client.id } })}>
                 <Plus className="w-4 h-4" /> Nueva orden
+              </Button>
+              {client.archived ? (
+                <Button variant="secondary" onClick={() => unarchiveMutation.mutate()} loading={unarchiveMutation.isPending}>
+                  <RotateCcw className="w-4 h-4" /> Restaurar
+                </Button>
+              ) : (
+                <Button variant="secondary" onClick={() => archiveMutation.mutate()} loading={archiveMutation.isPending}>
+                  <Archive className="w-4 h-4" /> Archivar
+                </Button>
+              )}
+              <Button variant="secondary" onClick={() => {
+                if (window.confirm('¿Eliminar permanentemente este cliente? Esta acción no se puede deshacer.')) {
+                  deleteMutation.mutate();
+                }
+              }} loading={deleteMutation.isPending}>
+                <Trash2 className="w-4 h-4" /> Eliminar
               </Button>
             </div>
           </div>

@@ -18,11 +18,11 @@
   }
 
   .card-header {
-    @apply px-6 py-4 border-b border-secondary-100;
+    @apply px-4 sm:px-6 py-4 border-b border-secondary-100;
   }
 
   .card-body {
-    @apply p-6;
+    @apply p-4 sm:p-6;
   }
 
   .page-container {

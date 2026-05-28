@@ -72,7 +72,7 @@ export default function WhatsAppSettings() {
             <p className="text-sm text-secondary-600 text-center">
               Abre WhatsApp en tu teléfono, ve a <strong>Menú → WhatsApp Web</strong> y escanea este código:
             </p>
-            <img src={qrImage} alt="Código QR" className="w-64 h-64 border border-secondary-200 rounded-lg" />
+            <img src={qrImage} alt="Código QR" className="w-48 h-48 sm:w-64 sm:h-64 border border-secondary-200 rounded-lg" />
             <p className="text-xs text-secondary-400">El código se actualiza automáticamente si expira</p>
           </div>
         </div>

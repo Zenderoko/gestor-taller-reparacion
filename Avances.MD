@@ -250,6 +250,104 @@ Agregados modales de edición para las tres entidades principales:
 
 ---
 
+### 18. Archivar / Eliminar clientes, equipos y órdenes
+
+**Problema**: No se podían eliminar registros y los datos se acumulaban sin posibilidad de limpieza.
+
+**Solución**: Implementado sistema de archivado (soft-delete) + eliminación permanente.
+
+**Modelo de datos**:
+- Agregados campos `archived` (Boolean) y `archivedAt` (DateTime?) a Client, Equipment y RepairOrder
+
+**Backend**:
+- Listas filtran `archived: false` por defecto. Se pasa `showArchived=true` para ver archivados
+- Controladores: `archive()`, `unarchive()`, `remove()` (permanente)
+- Rutas: `PUT /:id/archive`, `PUT /:id/unarchive`, `DELETE /:id`
+
+**Frontend**:
+- Botón "Archivar" / "Restaurar" en detalle de cliente y orden
+- Botón "Archivar" / "Restaurar" por fila en tabla de equipos
+- Botón "Eliminar" con confirmación en detalle de cliente
+- Toggle "Archivados" en listas de Clientes, Órdenes y Equipos
+
+**Archivos modificados**:
+- `backend/prisma/schema.prisma` — campos archived + archivedAt
+- `backend/src/controllers/clientController.js` — archive, unarchive
+- `backend/src/controllers/equipmentController.js` — archive, unarchive
+- `backend/src/controllers/orderController.js` — archive, unarchive
+- `backend/src/routes/clients.js` — rutas archive/unarchive
+- `backend/src/routes/equipment.js` — rutas archive/unarchive
+- `backend/src/routes/orders.js` — rutas archive/unarchive
+- `frontend/src/lib/api.js` — archive, unarchive en APIs
+- `frontend/src/pages/Clients.jsx` — toggle archivados
+- `frontend/src/pages/ClientDetail.jsx` — botones archivar/restaurar/eliminar
+- `frontend/src/pages/Orders.jsx` — toggle archivados
+- `frontend/src/pages/OrderDetail.jsx` — botones archivar/restaurar
+- `frontend/src/pages/Equipment.jsx` — toggle archivados + acciones por fila
+
+---
+
+---
+
+### 19. Tooltips en botones de equipos
+
+- Agregados tooltips al hacer hover sobre los iconos de editar, archivar/restaurar y eliminar en la tabla de equipos
+
+**Archivos modificados**:
+- `frontend/src/pages/Equipment.jsx` — tooltips con group-hover
+
+---
+
+### 20. Botón eliminar en detalle de orden
+
+- Agregada mutación `deleteMutation` en `OrderDetail.jsx`
+- Botón "Eliminar orden" con confirmación en sección de acciones
+- Agregado `ordersApi.delete` en `api.js`
+- Al eliminar, redirige a `/orders`
+
+**Archivos modificados**:
+- `frontend/src/lib/api.js` — delete en ordersApi
+- `frontend/src/pages/OrderDetail.jsx` — deleteMutation + botón eliminar
+
+---
+
+### 21. Diseño responsive
+
+**Sidebar responsive**:
+- Sidebar se convierte en overlay deslizable en pantallas menores a `lg` (1024px)
+- Botón hamburguesa (`Menu`) en TopBar para abrir sidebar en móvil
+- Fondo oscuro (overlay) al abrir sidebar, cierra al hacer clic fuera o en la X
+- Navegación cierra sidebar al hacer clic en un enlace
+
+**TopBar responsive**:
+- Fecha abreviada en móvil (día/mes), completa en desktop
+- Email del usuario oculto en tablets y móviles
+- Padding responsive (`px-4 sm:px-6`)
+- Botón menú hamburguesa visible solo en móvil (`lg:hidden`)
+
+**Pagination responsive**:
+- Texto "Página X de Y" oculto en móvil (`hidden sm:block`)
+
+**RecentOrdersTable**:
+- Envuelta en `overflow-x-auto` para scroll horizontal en móvil
+
+**WhatsApp QR**:
+- Código QR responsive: `w-48 h-48` en móvil, `w-64 h-64` en desktop
+
+**Card responsive**:
+- Padding de `.card-header` y `.card-body` responsivo: `px-4 sm:px-6` y `p-4 sm:p-6` para mejor espacio en móvil
+
+**Archivos modificados**:
+- `frontend/src/styles/globals.css` — padding responsive en card-header y card-body
+- `frontend/src/components/layout/DashboardLayout.jsx` — sidebarOpen state
+- `frontend/src/components/layout/Sidebar.jsx` — overlay responsive, props open/onClose
+- `frontend/src/components/layout/TopBar.jsx` — hamburger menu, fecha responsive
+- `frontend/src/components/ui/Pagination.jsx` — texto responsive
+- `frontend/src/components/dashboard/RecentOrdersTable.jsx` — overflow-x-auto
+- `frontend/src/pages/WhatsAppSettings.jsx` — QR responsive
+
+---
+
 ### Pendientes / Próximos pasos
 
 - **WhatsApp — número dedicado para el taller**: Usar un chip prepago solo para el taller, instalar WhatsApp en un celular viejo y escanear el QR con ese número. Así los mensajes salen del número del taller, no del personal.

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ordersApi } from '@/lib/api';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { ORDER_STATUS_OPTIONS, PRIORITY_LABELS } from '@/lib/constants';
-import { Plus, ClipboardList } from 'lucide-react';
+import { Plus, ClipboardList, Archive } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Badge from '@/components/ui/Badge';
@@ -27,11 +27,12 @@ export default function Orders() {
   const [priority, setPriority] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['orders', search, status, priority, startDate, endDate, page],
-    queryFn: () => ordersApi.list({ search, status: status || undefined, priority: priority || undefined, startDate: startDate || undefined, endDate: endDate || undefined, page, limit: 20 }),
+    queryKey: ['orders', search, status, priority, startDate, endDate, showArchived, page],
+    queryFn: () => ordersApi.list({ search, status: status || undefined, priority: priority || undefined, startDate: startDate || undefined, endDate: endDate || undefined, showArchived: showArchived || undefined, page, limit: 20 }),
   });
 
   return (
@@ -66,6 +67,14 @@ export default function Orders() {
             </div>
             <div className="w-full sm:w-48">
               <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} className="block w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            </div>
+            <div className="flex items-center">
+              <button
+                onClick={() => { setShowArchived(!showArchived); setPage(1); }}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border transition-colors ${showArchived ? 'bg-primary-50 border-primary-300 text-primary-700' : 'border-secondary-300 text-secondary-600 hover:bg-secondary-50'}`}
+              >
+                <Archive className="w-4 h-4" /> Archivados
+              </button>
             </div>
           </div>
         </div>

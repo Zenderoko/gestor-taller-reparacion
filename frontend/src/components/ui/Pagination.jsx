@@ -11,7 +11,7 @@ export default function Pagination({ page, totalPages, onPageChange }) {
 
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-secondary-200">
-      <p className="text-sm text-secondary-600">
+      <p className="text-sm text-secondary-600 hidden sm:block">
         Página {page} de {totalPages}
       </p>
       <div className="flex items-center gap-1">

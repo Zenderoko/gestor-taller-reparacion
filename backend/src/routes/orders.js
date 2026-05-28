@@ -34,5 +34,7 @@ router.post(
 
 router.post('/:id/whatsapp', orderCtrl.sendWhatsApp);
 router.get('/:id/pdf', orderCtrl.downloadPdf);
+router.put('/:id/archive', orderCtrl.archive);
+router.put('/:id/unarchive', orderCtrl.unarchive);
 
 export default router;

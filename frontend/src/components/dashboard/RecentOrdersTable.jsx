@@ -10,7 +10,8 @@ export default function RecentOrdersTable({ orders }) {
   }
 
   return (
-    <table className="w-full text-sm">
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
       <thead>
         <tr className="text-left text-xs font-semibold text-secondary-500 uppercase tracking-wider">
           <th className="pb-3 pr-4">#</th>
@@ -40,5 +41,6 @@ export default function RecentOrdersTable({ orders }) {
         ))}
       </tbody>
     </table>
+    </div>
   );
 }

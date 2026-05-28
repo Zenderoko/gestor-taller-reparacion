@@ -33,6 +33,8 @@ router.put(
   clientCtrl.update
 );
 
+router.put('/:id/archive', clientCtrl.archive);
+router.put('/:id/unarchive', clientCtrl.unarchive);
 router.delete('/:id', clientCtrl.remove);
 
 export default router;

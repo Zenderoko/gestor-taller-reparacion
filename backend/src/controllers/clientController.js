@@ -4,19 +4,19 @@ import { createAuditLog } from '../utils/audit.js';
 
 export async function list(req, res, next) {
   try {
-    const { search, page = 1, limit = 20 } = req.query;
+    const { search, showArchived, page = 1, limit = 20 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
-    const where = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { phone: { contains: search } },
-            { email: { contains: search, mode: 'insensitive' } },
-            { documentId: { contains: search } },
-          ],
-        }
-      : {};
+    const where = {};
+    if (showArchived !== 'true') where.archived = false;
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { documentId: { contains: search } },
+      ];
+    }
 
     const [clients, total] = await Promise.all([
       prisma.client.findMany({
@@ -92,6 +92,32 @@ export async function update(req, res, next) {
       where: { id: req.params.id },
       data: req.body,
     });
+    res.json({ data: client });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function archive(req, res, next) {
+  try {
+    const client = await prisma.client.update({
+      where: { id: req.params.id },
+      data: { archived: true, archivedAt: new Date() },
+    });
+    await createAuditLog({ action: 'ARCHIVE', entity: 'Client', entityId: client.id, userId: req.auth.userId });
+    res.json({ data: client });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function unarchive(req, res, next) {
+  try {
+    const client = await prisma.client.update({
+      where: { id: req.params.id },
+      data: { archived: false, archivedAt: null },
+    });
+    await createAuditLog({ action: 'UNARCHIVE', entity: 'Client', entityId: client.id, userId: req.auth.userId });
     res.json({ data: client });
   } catch (err) {
     next(err);

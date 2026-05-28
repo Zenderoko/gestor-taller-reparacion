@@ -3,10 +3,11 @@ import { AppError } from '../middleware/errorHandler.js';
 
 export async function list(req, res, next) {
   try {
-    const { clientId, type, search, page = 1, limit = 20 } = req.query;
+    const { clientId, type, search, showArchived, page = 1, limit = 20 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     const where = {};
+    if (showArchived !== 'true') where.archived = false;
     if (clientId) where.clientId = clientId;
     if (type) where.type = type;
     if (search) {
@@ -69,6 +70,30 @@ export async function update(req, res, next) {
     const equipment = await prisma.equipment.update({
       where: { id: req.params.id },
       data: req.body,
+    });
+    res.json({ data: equipment });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function archive(req, res, next) {
+  try {
+    const equipment = await prisma.equipment.update({
+      where: { id: req.params.id },
+      data: { archived: true, archivedAt: new Date() },
+    });
+    res.json({ data: equipment });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function unarchive(req, res, next) {
+  try {
+    const equipment = await prisma.equipment.update({
+      where: { id: req.params.id },
+      data: { archived: false, archivedAt: null },
     });
     res.json({ data: equipment });
   } catch (err) {

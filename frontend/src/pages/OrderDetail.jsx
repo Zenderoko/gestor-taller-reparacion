@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi } from '@/lib/api';
 import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 import { STATUS_LABELS, REPAIR_STATUS, PRIORITY_LABELS } from '@/lib/constants';
-import { ArrowLeft, Printer, Send, Plus, Pencil } from 'lucide-react';
+import { ArrowLeft, Printer, Send, Plus, Pencil, Archive, RotateCcw, Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Badge from '@/components/ui/Badge';
@@ -82,6 +82,33 @@ export default function OrderDetail() {
       queryClient.invalidateQueries({ queryKey: ['order', id] });
       toast.success('Orden actualizada');
       setEditModal(false);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: () => ordersApi.archive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+      toast.success('Orden archivada');
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const unarchiveMutation = useMutation({
+    mutationFn: () => ordersApi.unarchive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+      toast.success('Orden restaurada');
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => ordersApi.delete(id),
+    onSuccess: () => {
+      toast.success('Orden eliminada');
+      navigate('/orders');
     },
     onError: (err) => toast.error(err.message),
   });
@@ -278,13 +305,25 @@ export default function OrderDetail() {
                 onClick={async () => {
                   try {
                     await ordersApi.sendWhatsApp(order.id);
-                    toast.success('WhatsApp enviado');
+                    toast.success('WhatsApp enviado al cliente');
                   } catch (err) {
-                    toast.error(err.message);
+                    toast.error(err.message || 'Error al enviar WhatsApp. Revisa la conexión en la sección WhatsApp.');
                   }
                 }}
               >
                 <Send className="w-4 h-4" /> Enviar WhatsApp
+              </Button>
+              {order.archived ? (
+                <Button variant="secondary" size="sm" className="w-full" onClick={() => unarchiveMutation.mutate()} loading={unarchiveMutation.isPending}>
+                  <RotateCcw className="w-4 h-4" /> Restaurar orden
+                </Button>
+              ) : (
+                <Button variant="secondary" size="sm" className="w-full" onClick={() => archiveMutation.mutate()} loading={archiveMutation.isPending}>
+                  <Archive className="w-4 h-4" /> Archivar orden
+                </Button>
+              )}
+              <Button variant="danger" size="sm" className="w-full" onClick={() => { if (window.confirm('¿Eliminar permanentemente esta orden?')) deleteMutation.mutate(); }} loading={deleteMutation.isPending}>
+                <Trash2 className="w-4 h-4" /> Eliminar orden
               </Button>
             </div>
           </div>

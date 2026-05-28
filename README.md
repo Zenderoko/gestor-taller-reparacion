@@ -102,6 +102,16 @@ npm run dev
 
 > Las keys de Clerk en los `.env` son de **desarrollo** y funcionan en cualquier máquina. Para producción se cambian por keys reales.
 
+### 4. Probar desde otro equipo
+
+```bash
+# Clonar el repo
+git clone https://github.com/Zenderoko/gestor-taller-reparacion.git
+cd gestor-taller-reparacion
+
+# Seguir pasos 1, 2 y 3 de arriba (BD → Backend → Frontend)
+```
+
 ## Variables de entorno
 
 ### Backend (.env)

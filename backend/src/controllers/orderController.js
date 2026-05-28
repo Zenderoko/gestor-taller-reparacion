@@ -8,10 +8,11 @@ import { generateRepairOrderPDF } from '../services/pdfService.js';
 
 export async function list(req, res, next) {
   try {
-    const { status, clientId, priority, search, startDate, endDate, page = 1, limit = 20 } = req.query;
+    const { status, clientId, priority, search, startDate, endDate, showArchived, page = 1, limit = 20 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     const where = {};
+    if (showArchived !== 'true') where.archived = false;
     if (status) where.status = status;
     if (clientId) where.clientId = clientId;
     if (priority) where.priority = priority;
@@ -230,6 +231,32 @@ export async function downloadPdf(req, res, next) {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="orden-${order.orderNumber}.pdf"`);
     res.send(pdfBuffer);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function archive(req, res, next) {
+  try {
+    const order = await prisma.repairOrder.update({
+      where: { id: req.params.id },
+      data: { archived: true, archivedAt: new Date() },
+    });
+    await createAuditLog({ action: 'ARCHIVE', entity: 'RepairOrder', entityId: order.id, userId: req.auth.userId });
+    res.json({ data: order });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function unarchive(req, res, next) {
+  try {
+    const order = await prisma.repairOrder.update({
+      where: { id: req.params.id },
+      data: { archived: false, archivedAt: null },
+    });
+    await createAuditLog({ action: 'UNARCHIVE', entity: 'RepairOrder', entityId: order.id, userId: req.auth.userId });
+    res.json({ data: order });
   } catch (err) {
     next(err);
   }

@@ -24,6 +24,8 @@ router.post(
 );
 
 router.put('/:id', equipmentCtrl.update);
+router.put('/:id/archive', equipmentCtrl.archive);
+router.put('/:id/unarchive', equipmentCtrl.unarchive);
 router.delete('/:id', equipmentCtrl.remove);
 
 export default router;

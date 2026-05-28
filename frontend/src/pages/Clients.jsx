@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { clientsApi } from '@/lib/api';
 import { formatDate, formatPhone } from '@/lib/utils';
-import { Plus, Users, Phone, Mail, ChevronRight } from 'lucide-react';
+import { Plus, Users, Phone, Mail, ChevronRight, Archive } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import SearchInput from '@/components/shared/SearchInput';
 import Loader from '@/components/shared/Loader';
@@ -19,13 +19,14 @@ export default function Clients() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['clients', search, page],
-    queryFn: () => clientsApi.list({ search, page, limit: 20 }),
+    queryKey: ['clients', search, showArchived, page],
+    queryFn: () => clientsApi.list({ search, showArchived: showArchived || undefined, page, limit: 20 }),
   });
 
   const onSubmit = async (formData) => {
@@ -55,12 +56,22 @@ export default function Clients() {
       </div>
 
       <div className="card">
-        <div className="p-4 border-b border-secondary-100">
-          <SearchInput
-            value={search}
-            onChange={(v) => { setSearch(v); setPage(1); }}
-            placeholder="Buscar por nombre, teléfono o email..."
-          />
+        <div className="p-4 border-b border-secondary-100 flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <SearchInput
+              value={search}
+              onChange={(v) => { setSearch(v); setPage(1); }}
+              placeholder="Buscar por nombre, teléfono o email..."
+            />
+          </div>
+          <div className="flex items-center">
+            <button
+              onClick={() => { setShowArchived(!showArchived); setPage(1); }}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border transition-colors ${showArchived ? 'bg-primary-50 border-primary-300 text-primary-700' : 'border-secondary-300 text-secondary-600 hover:bg-secondary-50'}`}
+            >
+              <Archive className="w-4 h-4" /> Archivados
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
