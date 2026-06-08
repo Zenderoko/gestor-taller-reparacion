@@ -62,10 +62,10 @@ export default function Orders() {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="w-full sm:w-48">
+            <div className="flex-1 sm:flex-none sm:w-48">
               <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} className="block w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
-            <div className="w-full sm:w-48">
+            <div className="flex-1 sm:flex-none sm:w-48">
               <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} className="block w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
             <div className="flex items-center">
@@ -95,11 +95,11 @@ export default function Orders() {
                 <Tr>
                   <Th># Orden</Th>
                   <Th>Cliente</Th>
-                  <Th>Equipo</Th>
+                  <Th className="hidden md:table-cell">Equipo</Th>
                   <Th>Estado</Th>
-                  <Th>Presupuesto</Th>
-                  <Th>Fecha</Th>
-                  <Th></Th>
+                  <Th className="hidden sm:table-cell">Presupuesto</Th>
+                  <Th className="hidden sm:table-cell">Fecha</Th>
+                  <Th className="hidden lg:table-cell"></Th>
                 </Tr>
               </Thead>
               <Tbody>
@@ -107,11 +107,11 @@ export default function Orders() {
                   <Tr key={order.id} onClick={() => navigate(`/orders/${order.id}`)}>
                     <Td className="font-medium text-primary-600">{order.orderNumber}</Td>
                     <Td className="font-medium text-secondary-900">{order.client.name}</Td>
-                    <Td className="text-secondary-600">{order.equipment.brand} {order.equipment.model}</Td>
+                    <Td className="hidden md:table-cell text-secondary-600">{order.equipment.brand} {order.equipment.model}</Td>
                     <Td><StatusBadge status={order.status} /></Td>
-                    <Td>{formatCurrency(order.estimatedCost)}</Td>
-                    <Td className="text-secondary-500">{formatDate(order.createdAt)}</Td>
-                    <Td><span className="text-xs text-secondary-500">{order._count?.statusHistory} cambios</span></Td>
+                    <Td className="hidden sm:table-cell">{formatCurrency(order.estimatedCost)}</Td>
+                    <Td className="hidden sm:table-cell text-secondary-500">{formatDate(order.createdAt)}</Td>
+                    <Td className="hidden lg:table-cell"><span className="text-xs text-secondary-500">{order._count?.statusHistory} cambios</span></Td>
                   </Tr>
                 ))}
               </Tbody>

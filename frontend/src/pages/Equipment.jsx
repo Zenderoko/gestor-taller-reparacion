@@ -106,9 +106,9 @@ export default function Equipment() {
                 <Tr>
                   <Th>Tipo</Th>
                   <Th>Equipo</Th>
-                  <Th>Serial</Th>
-                  <Th>Cliente</Th>
-                  <Th>Registrado</Th>
+                  <Th className="hidden sm:table-cell">Serial</Th>
+                  <Th className="hidden md:table-cell">Cliente</Th>
+                  <Th className="hidden md:table-cell">Registrado</Th>
                   <Th></Th>
                 </Tr>
               </Thead>
@@ -119,9 +119,9 @@ export default function Equipment() {
                     <Tr key={eq.id}>
                       <Td><Icon className="w-4 h-4 text-secondary-500" /></Td>
                       <Td className="font-medium text-secondary-900">{eq.brand} {eq.model}</Td>
-                      <Td className="text-secondary-500">{eq.serialNumber || '-'}</Td>
-                      <Td>{eq.client?.name}</Td>
-                      <Td className="text-secondary-500">{formatDate(eq.createdAt)}</Td>
+                      <Td className="hidden sm:table-cell text-secondary-500">{eq.serialNumber || '-'}</Td>
+                      <Td className="hidden md:table-cell">{eq.client?.name}</Td>
+                      <Td className="hidden md:table-cell text-secondary-500">{formatDate(eq.createdAt)}</Td>
                       <Td>
                         <div className="flex items-center gap-1">
                           <div className="group relative">

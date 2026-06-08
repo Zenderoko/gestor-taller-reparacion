@@ -40,6 +40,7 @@ export default function OrderDetail() {
     mutationFn: (data) => ordersApi.updateStatus(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order', id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Estado actualizado');
       setStatusModal(false);
     },
@@ -50,6 +51,7 @@ export default function OrderDetail() {
     mutationFn: (data) => ordersApi.addPayment(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order', id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Pago registrado');
       setPaymentModal(false);
       setPaymentAmount('');
@@ -61,6 +63,7 @@ export default function OrderDetail() {
     mutationFn: (formData) => ordersApi.update(id, formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order', id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Orden actualizada');
       setEditModal(false);
     },
@@ -71,6 +74,7 @@ export default function OrderDetail() {
     mutationFn: () => ordersApi.archive(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order', id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Orden archivada');
     },
     onError: (err) => toast.error(err.message),
@@ -80,6 +84,7 @@ export default function OrderDetail() {
     mutationFn: () => ordersApi.unarchive(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order', id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Orden restaurada');
     },
     onError: (err) => toast.error(err.message),
@@ -111,12 +116,12 @@ export default function OrderDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <div className="card">
-            <div className="card-header flex items-center justify-between">
-              <div>
+            <div className="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="min-w-0">
                 <h1 className="text-xl font-bold text-secondary-900">Orden #{order.orderNumber}</h1>
                 <p className="text-sm text-secondary-500 mt-1">Creada el {formatDateTime(order.createdAt)}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <StatusBadge status={order.status} />
                 <Badge variant={order.priority === 'URGENT' ? 'danger' : order.priority === 'HIGH' ? 'warning' : 'default'}>
                   {PRIORITY_LABELS[order.priority]}

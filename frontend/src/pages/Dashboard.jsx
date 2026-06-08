@@ -72,14 +72,14 @@ export default function Dashboard() {
           <div className="card-body">
             <div className="space-y-3">
               {upcomingDeliveries.map((order) => (
-                <div key={order.id} className="flex items-center justify-between py-2 border-b border-secondary-100 last:border-0 cursor-pointer hover:bg-secondary-50 rounded-lg px-2 -mx-2 transition-colors" onClick={() => navigate(`/orders/${order.id}`)}>
-                  <div>
-                    <p className="text-sm font-medium text-secondary-900">{order.client.name}</p>
-                    <p className="text-xs text-secondary-500">#{order.orderNumber}</p>
+                  <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2 border-b border-secondary-100 last:border-0 cursor-pointer hover:bg-secondary-50 rounded-lg px-2 -mx-2 transition-colors" onClick={() => navigate(`/orders/${order.id}`)}>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-secondary-900 truncate">{order.client.name}</p>
+                      <p className="text-xs text-secondary-500">#{order.orderNumber}</p>
+                    </div>
+                    <span className="text-xs text-secondary-500 mt-0.5 sm:mt-0">{order.client.phone}</span>
                   </div>
-                  <span className="text-xs text-secondary-500">{order.client.phone}</span>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         </div>

@@ -87,15 +87,15 @@ export default function Clients() {
           <>
             <Table>
               <Thead>
-                <Tr>
-                  <Th>Nombre</Th>
-                  <Th>Teléfono</Th>
-                  <Th>Email</Th>
-                  <Th>Equipos</Th>
-                  <Th>Órdenes</Th>
-                  <Th>Registrado</Th>
-                  <Th></Th>
-                </Tr>
+                  <Tr>
+                    <Th>Nombre</Th>
+                    <Th>Teléfono</Th>
+                    <Th className="hidden sm:table-cell">Email</Th>
+                    <Th className="hidden md:table-cell">Equipos</Th>
+                    <Th className="hidden md:table-cell">Órdenes</Th>
+                    <Th className="hidden md:table-cell">Registrado</Th>
+                    <Th className="hidden sm:table-cell"></Th>
+                  </Tr>
               </Thead>
               <Tbody>
                 {data?.data?.map((client) => (
@@ -107,7 +107,7 @@ export default function Clients() {
                         {formatPhone(client.phone)}
                       </span>
                     </Td>
-                    <Td>
+                    <Td className="hidden sm:table-cell">
                       {client.email && (
                         <span className="flex items-center gap-1.5">
                           <Mail className="w-3.5 h-3.5 text-secondary-400" />
@@ -115,10 +115,10 @@ export default function Clients() {
                         </span>
                       )}
                     </Td>
-                    <Td>{client._count?.equipments || 0}</Td>
-                    <Td>{client._count?.orders || 0}</Td>
-                    <Td className="text-secondary-500">{formatDate(client.createdAt)}</Td>
-                    <Td><ChevronRight className="w-4 h-4 text-secondary-400" /></Td>
+                    <Td className="hidden md:table-cell">{client._count?.equipments || 0}</Td>
+                    <Td className="hidden md:table-cell">{client._count?.orders || 0}</Td>
+                    <Td className="hidden md:table-cell text-secondary-500">{formatDate(client.createdAt)}</Td>
+                    <Td className="hidden sm:table-cell"><ChevronRight className="w-4 h-4 text-secondary-400" /></Td>
                   </Tr>
                 ))}
               </Tbody>

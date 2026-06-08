@@ -168,20 +168,20 @@ export default function ClientDetail() {
                 <Thead>
                   <Tr>
                     <Th>#</Th>
-                    <Th>Equipo</Th>
+                    <Th className="hidden sm:table-cell">Equipo</Th>
                     <Th>Estado</Th>
-                    <Th>Fecha</Th>
-                    <Th></Th>
+                    <Th className="hidden sm:table-cell">Fecha</Th>
+                    <Th className="hidden sm:table-cell"></Th>
                   </Tr>
                 </Thead>
                 <Tbody>
                   {client.orders.map((order) => (
                     <Tr key={order.id} onClick={() => navigate(`/orders/${order.id}`)}>
                       <Td className="font-medium text-primary-600">{order.orderNumber}</Td>
-                      <Td>{order.equipment?.brand} {order.equipment?.model}</Td>
+                      <Td className="hidden sm:table-cell">{order.equipment?.brand} {order.equipment?.model}</Td>
                       <Td><StatusBadge status={order.status} /></Td>
-                      <Td className="text-secondary-500">{formatDate(order.createdAt)}</Td>
-                      <Td><ChevronRight className="w-4 h-4 text-secondary-400" /></Td>
+                      <Td className="hidden sm:table-cell text-secondary-500">{formatDate(order.createdAt)}</Td>
+                      <Td className="hidden sm:table-cell"><ChevronRight className="w-4 h-4 text-secondary-400" /></Td>
                     </Tr>
                   ))}
                 </Tbody>
