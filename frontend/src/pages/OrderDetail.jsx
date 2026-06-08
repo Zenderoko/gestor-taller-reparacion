@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi } from '@/lib/api';
 import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
-import { STATUS_LABELS, REPAIR_STATUS, PRIORITY_LABELS } from '@/lib/constants';
+import { STATUS_LABELS, PRIORITY_LABELS } from '@/lib/constants';
 import { ArrowLeft, Printer, Send, Plus, Pencil, Archive, RotateCcw, Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import StatusBadge from '@/components/ui/StatusBadge';
@@ -15,26 +15,7 @@ import Select from '@/components/ui/Select';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
-const STATUS_ACTIONS = {
-  [REPAIR_STATUS.PENDING]: [{ status: 'DIAGNOSING', label: 'Iniciar diagnóstico' }],
-  [REPAIR_STATUS.DIAGNOSING]: [
-    { status: 'IN_PROGRESS', label: 'Comenzar reparación' },
-    { status: 'WAITING_PARTS', label: 'Esperar piezas' },
-  ],
-  [REPAIR_STATUS.IN_PROGRESS]: [
-    { status: 'WAITING_PARTS', label: 'Esperar piezas' },
-    { status: 'READY_FOR_PICKUP', label: 'Marcar listo' },
-  ],
-  [REPAIR_STATUS.WAITING_PARTS]: [
-    { status: 'IN_PROGRESS', label: 'Reanudar reparación' },
-  ],
-  [REPAIR_STATUS.READY_FOR_PICKUP]: [
-    { status: 'COMPLETED', label: 'Completar orden' },
-  ],
-  [REPAIR_STATUS.COMPLETED]: [
-    { status: 'DELIVERED', label: 'Entregar al cliente' },
-  ],
-};
+const ALL_STATUSES = Object.entries(STATUS_LABELS);
 
 export default function OrderDetail() {
   const { id } = useParams();
@@ -117,8 +98,9 @@ export default function OrderDetail() {
   if (!data?.data) return <p className="text-center py-20 text-secondary-500">Orden no encontrada</p>;
 
   const order = data.data;
-  const actions = STATUS_ACTIONS[order.status] || [];
-  const remaining = Number(order.estimatedCost) - Number(order.deposit);
+  const statusOptions = ALL_STATUSES.filter(([value]) => value !== order.status);
+  const referenceCost = Number(order.totalCost) > 0 ? Number(order.totalCost) : Number(order.estimatedCost);
+  const remaining = referenceCost - Number(order.deposit);
 
   return (
     <div className="page-container">
@@ -226,7 +208,7 @@ export default function OrderDetail() {
                   <span className="font-medium">{formatCurrency(order.totalCost)}</span>
                 </div>
               )}
-              {(Number(order.estimatedCost) > 0 || Number(order.deposit) > 0) && (
+              {(Number(order.estimatedCost) > 0 || Number(order.totalCost) > 0 || Number(order.deposit) > 0) && (
                 <>
                   {Number(order.deposit) > 0 && (
                     <div className="flex justify-between text-sm">
@@ -245,8 +227,8 @@ export default function OrderDetail() {
                 size="sm"
                 className="w-full mt-2"
                 onClick={() => setPaymentModal(true)}
-                disabled={Number(order.estimatedCost) > 0 && Number(order.deposit) >= Number(order.estimatedCost)}
-                title={Number(order.estimatedCost) > 0 && Number(order.deposit) >= Number(order.estimatedCost) ? 'El presupuesto ya está cubierto' : ''}
+                disabled={referenceCost > 0 && Number(order.deposit) >= referenceCost}
+                title={referenceCost > 0 && Number(order.deposit) >= referenceCost ? 'El costo ya está cubierto' : ''}
               >
                 <Plus className="w-4 h-4" /> Registrar pago
               </Button>
@@ -258,19 +240,9 @@ export default function OrderDetail() {
               <h3 className="font-semibold text-secondary-900">Acciones</h3>
             </div>
             <div className="card-body space-y-2">
-              {actions.map((action) => (
-                <Button
-                  key={action.status}
-                  className="w-full"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedStatus(action.status);
-                    setStatusModal(true);
-                  }}
-                >
-                  {action.label}
-                </Button>
-              ))}
+              <Button className="w-full" size="sm" onClick={() => { setSelectedStatus(''); setStatusNote(''); setStatusModal(true); }}>
+                Cambiar estado
+              </Button>
               <Button variant="secondary" size="sm" className="w-full" onClick={() => {
                 reset({
                   diagnosis: order.diagnosis || '',
@@ -354,9 +326,20 @@ export default function OrderDetail() {
 
       <Modal open={statusModal} onClose={() => setStatusModal(false)} title="Cambiar estado">
         <div className="space-y-4">
-          <p className="text-sm text-secondary-600">
-            Cambiar de <StatusBadge status={order.status} /> a <StatusBadge status={selectedStatus} />
-          </p>
+          <div>
+            <label className="block text-sm font-medium text-secondary-700 mb-1">Nuevo estado</label>
+            <Select
+              options={statusOptions.map(([value, label]) => ({ value, label }))}
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              placeholder="Seleccionar estado..."
+            />
+          </div>
+          {selectedStatus && (
+            <p className="text-sm text-secondary-600">
+              De <StatusBadge status={order.status} /> a <StatusBadge status={selectedStatus} />
+            </p>
+          )}
           <div>
             <label className="block text-sm font-medium text-secondary-700 mb-1">Nota (opcional)</label>
             <textarea
@@ -369,7 +352,7 @@ export default function OrderDetail() {
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setStatusModal(false)}>Cancelar</Button>
-            <Button onClick={() => statusMutation.mutate({ status: selectedStatus, note: statusNote })} loading={statusMutation.isPending}>
+            <Button onClick={() => statusMutation.mutate({ status: selectedStatus, note: statusNote })} loading={statusMutation.isPending} disabled={!selectedStatus}>
               Confirmar
             </Button>
           </div>

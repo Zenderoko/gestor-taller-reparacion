@@ -2,7 +2,6 @@ import { prisma } from '../index.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { generateOrderNumber } from '../utils/orderNumber.js';
 import { createAuditLog } from '../utils/audit.js';
-import { STATUS_TRANSITIONS } from '../config/constants.js';
 import { sendMessage, orderStatusMessage } from '../services/whatsappService.js';
 import { generateRepairOrderPDF } from '../services/pdfService.js';
 
@@ -105,14 +104,6 @@ export async function updateStatus(req, res, next) {
 
     const order = await prisma.repairOrder.findUnique({ where: { id } });
     if (!order) throw new AppError('Orden no encontrada', 404);
-
-    const validTransitions = STATUS_TRANSITIONS[order.status];
-    if (!validTransitions.includes(status)) {
-      throw new AppError(
-        `Transición inválida de ${order.status} a ${status}`,
-        400
-      );
-    }
 
     const updateData = { status };
     if (status === 'IN_PROGRESS' && !order.startDate) updateData.startDate = new Date();
@@ -231,6 +222,19 @@ export async function downloadPdf(req, res, next) {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="orden-${order.orderNumber}.pdf"`);
     res.send(pdfBuffer);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function remove(req, res, next) {
+  try {
+    const order = await prisma.repairOrder.findUnique({ where: { id: req.params.id } });
+    if (!order) throw new AppError('Orden no encontrada', 404);
+
+    await prisma.repairOrder.delete({ where: { id: req.params.id } });
+    await createAuditLog({ action: 'DELETE', entity: 'RepairOrder', entityId: req.params.id, userId: req.auth.userId });
+    res.status(204).end();
   } catch (err) {
     next(err);
   }

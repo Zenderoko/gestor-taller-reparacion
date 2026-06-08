@@ -1,5 +1,16 @@
 import PDFDocument from 'pdfkit';
 
+const STATUS_LABELS = {
+  PENDING: 'Pendiente',
+  DIAGNOSING: 'Diagnosticando',
+  IN_PROGRESS: 'En reparación',
+  WAITING_PARTS: 'Esperando piezas',
+  READY_FOR_PICKUP: 'Listo para retirar',
+  COMPLETED: 'Completado',
+  DELIVERED: 'Entregado',
+  CANCELLED: 'Cancelado',
+};
+
 export function generateRepairOrderPDF(order) {
   const doc = new PDFDocument({ size: 'A4', margin: 50 });
   const buffers = [];
@@ -42,7 +53,7 @@ export function generateRepairOrderPDF(order) {
     }
 
     doc.font('Helvetica-Bold').text('Estado:');
-    doc.font('Helvetica').text(order.status);
+    doc.font('Helvetica').text(STATUS_LABELS[order.status] || order.status);
     doc.moveDown();
 
     doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
