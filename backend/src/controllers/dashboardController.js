@@ -36,6 +36,9 @@ export async function getStats(req, res, next) {
       }),
       prisma.repairOrder.aggregate({
         _sum: { totalCost: true },
+        where: {
+          NOT: { status: 'CANCELLED', deposit: 0 },
+        },
       }),
       prisma.repairOrder.findMany({
         take: 10,

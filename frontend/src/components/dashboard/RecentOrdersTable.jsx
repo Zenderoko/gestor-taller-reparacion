@@ -19,7 +19,8 @@ export default function RecentOrdersTable({ orders }) {
           <th className="pb-3 pr-4">Equipo</th>
           <th className="pb-3 pr-4">Estado</th>
           <th className="pb-3 pr-4">Fecha</th>
-          <th className="pb-3 text-right">Total</th>
+          <th className="pb-3 pr-4 text-right">Total</th>
+          <th className="pb-3 text-right">Saldo</th>
         </tr>
       </thead>
       <tbody className="divide-y divide-secondary-100">
@@ -36,7 +37,13 @@ export default function RecentOrdersTable({ orders }) {
             </td>
             <td className="py-3 pr-4"><StatusBadge status={order.status} /></td>
             <td className="py-3 pr-4 text-secondary-500">{formatDate(order.createdAt)}</td>
-            <td className="py-3 text-right font-medium">{formatCurrency(order.totalCost)}</td>
+            <td className="py-3 pr-4 text-right font-medium">{formatCurrency(order.totalCost)}</td>
+            <td className="py-3 text-right font-medium text-secondary-600">
+              {(() => {
+                const saldo = (Number(order.totalCost) || Number(order.estimatedCost)) - Number(order.deposit);
+                return saldo > 0 ? formatCurrency(saldo) : '—';
+              })()}
+            </td>
           </tr>
         ))}
       </tbody>

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { dashboardApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { REPAIR_STATUS, STATUS_LABELS } from '@/lib/constants';
@@ -9,6 +10,7 @@ import { Wrench, Users, ClipboardList, DollarSign, Clock, AlertCircle } from 'lu
 import Loader from '@/components/shared/Loader';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: dashboardApi.getStats,
@@ -70,7 +72,7 @@ export default function Dashboard() {
           <div className="card-body">
             <div className="space-y-3">
               {upcomingDeliveries.map((order) => (
-                <div key={order.id} className="flex items-center justify-between py-2 border-b border-secondary-100 last:border-0">
+                <div key={order.id} className="flex items-center justify-between py-2 border-b border-secondary-100 last:border-0 cursor-pointer hover:bg-secondary-50 rounded-lg px-2 -mx-2 transition-colors" onClick={() => navigate(`/orders/${order.id}`)}>
                   <div>
                     <p className="text-sm font-medium text-secondary-900">{order.client.name}</p>
                     <p className="text-xs text-secondary-500">#{order.orderNumber}</p>
