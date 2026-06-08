@@ -4,6 +4,7 @@ import { generateOrderNumber } from '../utils/orderNumber.js';
 import { createAuditLog } from '../utils/audit.js';
 import { sendMessage, orderStatusMessage } from '../services/whatsappService.js';
 import { generateRepairOrderPDF } from '../services/pdfService.js';
+import { STATUS_LABELS } from '../config/constants.js';
 
 export async function list(req, res, next) {
   try {
@@ -115,7 +116,7 @@ export async function updateStatus(req, res, next) {
         data: {
           ...updateData,
           statusHistory: {
-            create: { status, note: note || `Estado cambiado a ${status}`, createdBy: req.auth.userId },
+            create: { status, note: note || `Estado cambiado a ${STATUS_LABELS[status] || status}`, createdBy: req.auth.userId },
           },
         },
         include: { client: true, equipment: true, statusHistory: { orderBy: { createdAt: 'desc' } } },

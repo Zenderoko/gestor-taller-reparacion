@@ -353,3 +353,53 @@ Agregados modales de edición para las tres entidades principales:
 - **WhatsApp — número dedicado para el taller**: Usar un chip prepago solo para el taller, instalar WhatsApp en un celular viejo y escanear el QR con ese número. Así los mensajes salen del número del taller, no del personal.
 - **WhatsApp Business API**: Alternativa más profesional con hasta 1000 mensajes gratis al mes vía Meta, requiere verificación de empresa.
 - Pasar a producción (cambiar keys de desarrollo a producción en Clerk)
+
+---
+
+### 22. Multi-tenencia — Aislamiento de datos por negocio
+
+**Situación actual**: Todos los usuarios comparten la misma base de datos. No hay aislamiento por sesión/usuario.
+
+**Cambios necesarios para implementar**:
+
+1. **Esquema (Prisma)**:
+   - Agregar `businessId String` a las tablas: `clients`, `equipments`, `repair_orders`, `payments`, `status_history`
+   - Agregar índice compuesto donde corresponda
+
+2. **Registro de usuario (Webhook Clerk)**:
+   - Al crear un usuario, asignarle un `businessId` único (puede ser su `clerkId` o un UUID dedicado)
+   - Si se usa modelo por negocio (varios usuarios por taller), crear una tabla `Business` y asociar usuarios a ella
+
+3. **Auth middleware**:
+   - En `auth.js`, después de verificar el token, obtener el `businessId` del usuario desde la BD local y agregarlo a `req.auth.businessId`
+
+4. **Controladores**:
+   - En cada `list()`, `getById()`, `create()`, `update()`, `remove()`, `archive()`, `unarchive()` — agregar filtro `businessId: req.auth.businessId` en todas las consultas
+   - En `create()`, asignar `businessId: req.auth.businessId` al crear registros
+   - Dashboard: filtrar todas las agregaciones por `businessId`
+
+5. **Middleware global opcional**:
+   - Crear un middleware que inyecte `businessId` automáticamente en `req` y lo agregue a `prisma` queries por defecto usando `prisma.$extends`
+
+**Archivos a modificar**:
+- `backend/prisma/schema.prisma` — businessId en todas las tablas
+- `backend/src/middleware/auth.js` — lookup de businessId
+- `backend/src/controllers/*.js` — filtros businessId en todos
+- `backend/src/routes/webhooks.js` — asignar businessId al crear usuario
+
+---
+
+### 23. Empaquetado para distribución (portable / .exe)
+
+**Objetivo**: Poder ejecutar el proyecto en otro PC sin instalar VSCode, Node.js ni PostgreSQL. Que funcione con doble clic como un programa normal.
+
+**Opciones evaluadas**:
+
+| Opción | WhatsApp | Peso | Requisitos | Descripción |
+|--------|----------|------|------------|-------------|
+| **A1** — SQLite + .exe (pkg) | ❌ No funciona | ~50 MB | Ninguno | PostgreSQL → SQLite, frontend servido desde backend, compilado con `pkg`. WhatsApp no funciona porque wppconnect necesita Chromium. |
+| **A2** — SQLite + .exe + Chromium | ✅ Sí | ~200 MB | Ninguno | Igual que A1 pero incluye Chromium portátil para wppconnect. El .exe pesa bastante. |
+| **B** — Docker Compose | ✅ Sí | ~200 MB | Docker Desktop | PostgreSQL + backend + frontend en contenedores. WhatsApp funciona (Chromium dentro del contenedor). Un solo comando: `docker compose up`. |
+| **C** — Script .bat + SQLite | ✅ Sí | ~80 MB | Solo Windows | Cambio a SQLite, script que descarga Node.js portable, instala deps y arranca todo. Sin compilar, funciona en Node.js real. |
+
+**Decisión**: Pendiente para revisar más adelante.
