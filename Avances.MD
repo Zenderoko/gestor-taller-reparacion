@@ -256,3 +256,39 @@ npm start                    # Sirve API + frontend en :3001
 - La base de datos SQLite queda en el NAS, accesible solo desde ahí
 - Cada equipo de la red accede con el navegador, sin instalar nada
 - Los datos están centralizados y seguros en el NAS
+
+---
+
+### Auto-inicio al encender el NAS
+
+**Opción A — PM2 (recomendado)**
+
+```bash
+# En el NAS, una sola vez
+npm install -g pm2
+cd gestor-taller-reparacion
+pm2 start ecosystem.config.js
+pm2 startup    # genera script de arranque automático
+pm2 save       # guarda la lista de procesos
+```
+
+A partir de ahora, cada vez que el NAS se reinicie, PM2 arranca el backend automáticamente.
+
+**Opción B — Script de inicio**
+
+Si el NAS no tiene PM2 o prefieres usar la tarea programada del NAS:
+
+1. Editar `backend/.env` y poner `NODE_ENV=production`
+2. Agregar `start.sh` como tarea de inicio en el NAS:
+   - **Synology**: Panel de control → Tarea programada → Crear → Activada al arranque
+   - **QNAP**: App Center → Script automático
+   - **Linux genérico**: `/etc/rc.local` o systemd
+
+```bash
+# Ejemplo de tarea programada en Synology
+bash /ruta/a/gestor-taller-reparacion/start.sh
+```
+
+**Archivos creados**:
+- `ecosystem.config.js` — configuración PM2
+- `start.sh` — script de inicio para tareas programadas
