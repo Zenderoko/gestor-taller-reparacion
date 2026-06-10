@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { authApi } from '@/lib/api';
 import { Wrench } from 'lucide-react';
@@ -8,6 +9,7 @@ import toast from 'react-hot-toast';
 
 export default function Login() {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +25,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      toast.success('Sesión iniciada');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       toast.error(err.message);
     } finally {
