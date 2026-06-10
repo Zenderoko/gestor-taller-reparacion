@@ -191,7 +191,7 @@ Agregados modales de edición para las tres entidades principales:
 
 ---
 
-### Cómo instalar en un PC nuevo
+### Cómo instalar en un PC nuevo (desarrollo)
 
 Requisito: **Solo Node.js** (no necesita PostgreSQL ni Clerk)
 
@@ -216,3 +216,43 @@ npm run dev                  # frontend en http://localhost:5173
 Abrir `http://localhost:5173` e iniciar sesión con `admin@gestortaller.cl` / `admin123`.
 
 Cada PC tiene su propio archivo SQLite (`backend/prisma/dev.db`), los datos nunca se mezclan entre instalaciones.
+
+---
+
+### Cómo desplegar en un NAS (producción)
+
+El NAS corre el backend y sirve el frontend. Otros equipos acceden solo con el navegador.
+
+```bash
+# 1. Clonar en el NAS
+cd /ruta/en/el/nas
+git clone <repo-url>
+cd gestor-taller-reparacion
+
+# 2. Backend
+cd backend
+npm install
+npx prisma db push
+node prisma/seed.js
+# Editar backend/.env:
+#   NODE_ENV=production
+#   JWT_SECRET=contraseña-segura-aleatoria
+#   APP_URL=http://192.168.1.100:3001   (IP del NAS)
+
+# 3. Construir frontend
+cd ../frontend
+npm install
+npm run build                # genera frontend/dist/
+
+# 4. Iniciar (solo backend)
+cd ../backend
+npm start                    # Sirve API + frontend en :3001
+```
+
+**Acceso desde cualquier PC de la red**: `http://192.168.1.100:3001`
+
+**Ventajas**:
+- Un solo proceso (backend), no hay que correr frontend aparte
+- La base de datos SQLite queda en el NAS, accesible solo desde ahí
+- Cada equipo de la red accede con el navegador, sin instalar nada
+- Los datos están centralizados y seguros en el NAS

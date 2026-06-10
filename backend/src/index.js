@@ -3,6 +3,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
 
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -20,10 +23,11 @@ export const prisma = new PrismaClient();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const isProduction = process.env.NODE_ENV === 'production';
 
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
-app.use(morgan('dev'));
+app.use(morgan(isProduction ? 'combined' : 'dev'));
 
 app.use(express.json());
 app.use(authMiddleware);
@@ -40,11 +44,26 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Servir frontend estático en producción
+if (isProduction) {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const distPath = path.resolve(__dirname, '../../frontend/dist');
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+    console.log(`Sirviendo frontend estático desde ${distPath}`);
+  } else {
+    console.warn('ADVERTENCIA: frontend/dist/ no encontrado. Construye el frontend con "npm run build" en frontend/');
+  }
+}
+
 app.use(notFoundHandler);
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
+  console.log(`Servidor corriendo en puerto ${PORT} (${isProduction ? 'producción' : 'desarrollo'})`);
 });
 
 process.on('SIGTERM', async () => {
