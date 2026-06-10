@@ -102,346 +102,50 @@ Agregados modales de edición para las tres entidades principales:
 - Actualizados todos los inputs numéricos de precios de `step="0.01"` a `step="1"`
 
 **Archivos modificados**:
-- `frontend/src/lib/utils.js` — locale CLP
-- `frontend/src/pages/OrderDetail.jsx` — step="1" en inputs
-- `frontend/src/pages/NewOrder.jsx` — step="1" en input
-
----
-
-### 9. Tooltips en sidebar colapsada
-
-- Agregado tooltip oscuro al hacer hover sobre iconos de la barra lateral cuando está colapsada
-
-**Archivos modificados**:
-- `frontend/src/components/layout/Sidebar.jsx` — tooltips con group-hover
-
----
-
-### 10. Corrección pagos (abono) y saldo restante
-
-**Problema**: Al agregar un abono, el saldo restante se mostraba como $0.
-**Causa**: `remaining = totalCost - deposit` con `Math.max(0, remaining)` ocultaba valores negativos. Además `addPayment` no era atómico.
-
-**Soluciones**:
-- Cambiado `remaining` a `estimatedCost - deposit` (presupuesto - abono)
-- Eliminado `Math.max(0, ...)` para mostrar valores reales (negativo = saldo a favor)
-- `addPayment` ahora usa `prisma.$transaction` con `deposit: { increment: amount }` para evitar race conditions
-- Al editar una orden, si el `deposit` aumentó, se crea automáticamente un `Payment` con la diferencia (método `AJUSTE`)
-- Botón "Registrar pago" se deshabilita si el abono ya cubre el presupuesto
-
-**Archivos modificados**:
-- `backend/src/controllers/orderController.js` — addPayment atómico, auto-Payment en update
-- `frontend/src/pages/OrderDetail.jsx` — remaining con estimatedCost, sin Math.max, botón disabled
-
----
-
-### 11. Dashboard - Ingresos del mes corregido
-
-**Problema**: "Ingresos del mes" siempre mostraba $0.
-**Causa**: Sumaba `totalCost` de órdenes COMPLETED/DELIVERED del mes (casi siempre vacío).
-**Solución**: Ahora suma `Payment.amount` de los pagos registrados en el mes.
-
-**Archivos modificados**:
-- `backend/src/controllers/dashboardController.js` — revenue desde Payment.amount
-
----
-
-### 12. Dashboard - Nueva tarjeta "Total de las órdenes"
-
-- Reemplazada tarjeta "Total órdenes" (contador) por "Total de las órdenes" que muestra la suma de `totalCost` de todas las órdenes
-- Agregada consulta `repairOrder.aggregate({ _sum: totalCost })` en el backend
-- Eliminada variable muerta `startOfWeek`
-
-**Archivos modificados**:
-- `backend/src/controllers/dashboardController.js` — totalCost aggregator
-- `frontend/src/pages/Dashboard.jsx` — label y value actualizados
-
----
-
-### 13. Renombres en UI
-
-- "Presupuesto" → "Presupuesto estimado" (vista y modal de edición)
-- "Total" → "Costo final" (vista y modal de edición)
-
-**Archivos modificados**:
-- `frontend/src/pages/OrderDetail.jsx` — labels actualizados
-
----
-
-### 14. Webhook Clerk — corrección de firma Svix + sincronización
-
-**Problema**: El webhook usaba `JSON.stringify(req.body)` para verificar la firma, pero Svix necesita el body raw original.
-
-**Soluciones**:
-- Movido `express.raw({ type: 'application/json' })` antes del parseo JSON global para que los webhooks reciban el body sin modificar
-- Cambiado `wh.verify(JSON.stringify(req.body), ...)` por `wh.verify(req.body, ...)` usando los svix-headers
-- Agregado logging y más campos (avatar, teléfono) en la actualización de usuario
-- Agregado `syncUserFromClerk()` en `GET /users/me` como fallback: si el webhook aún no ha sincronizado al usuario, lo crea bajo demanda desde la API de Clerk
-
-**Archivos modificados**:
-- `backend/src/index.js` — express.raw antes de express.json para webhooks
-- `backend/src/routes/webhooks.js` — raw body + más datos en upsert
-- `backend/src/routes/users.js` — sincronización fallback desde Clerk API
-
----
-
-### 15. WhatsApp con wppconnect (reemplazo de Twilio)
-
-**Problema**: Twilio Sandbox gratuito solo permite enviar a 1 número previa activación. Poco práctico.
-
-**Solución**: Reemplazado Twilio por `@wppconnect-team/wppconnect` (v2.2.1). Conecta con WhatsApp Web real, sin límite de números ni costos recurrentes.
-
-- Instalado `@wppconnect-team/wppconnect`
-- Creado servicio `whatsappService.js` con:
-  - `startConnection()` — inicia sesión y devuelve QR inmediatamente (no bloqueante)
-  - `sendMessage(to, message)` — envía mensaje, espera conexión con timeout de 30s
-  - `orderStatusMessage(order)` — genera mensaje formateado con estado de la orden
-  - Manejo de reconexión con `client.onStateChange()`
-  - Usa `catchQR` (no `onQR`) que es el callback correcto en v2.x
-- Agregado `POST /api/orders/:id/whatsapp` — envía WhatsApp manual desde detalle de orden
-- Agregado envío **automático** al cambiar estado de una orden (`updateStatus`)
-- Agregada página `/whatsapp` en frontend con QR en vivo (polling cada 3s)
-- Agregado link "WhatsApp" en la barra lateral
-- Las sesiones se guardan en `tokens/gestor-taller/` para persistencia
-
-**Archivos modificados/creados**:
-- `backend/src/services/whatsappService.js` — reescrito con wppconnect
-- `backend/src/routes/whatsapp.js` — nuevo (status + connect)
-- `backend/src/routes/orders.js` — ruta POST /:id/whatsapp
-- `backend/src/controllers/orderController.js` — sendWhatsApp + auto-envío
-- `frontend/src/pages/WhatsAppSettings.jsx` — nuevo (página QR)
-- `frontend/src/components/layout/Sidebar.jsx` — link a WhatsApp
-- `frontend/src/lib/api.js` — whatsappApi + downloadPdf
-- `frontend/src/App.jsx` — ruta /whatsapp
-- `backend/package.json` — agregado @wppconnect-team/wppconnect
-
----
-
-### 16. Generación de PDFs
-
-- Corregido `pdfService.js` para usar formato CLP (peso chileno sin decimales) y locale `es-CL`
-- Agregado `GET /api/orders/:id/pdf` — descarga PDF de la orden
-- Conectado botón "Imprimir PDF" en `OrderDetail.jsx` (abre PDF en nueva pestaña)
-
-**Archivos modificados**:
-- `backend/src/services/pdfService.js` — formato CLP, locale es-CL
-- `backend/src/controllers/orderController.js` — downloadPdf
-- `backend/src/routes/orders.js` — ruta GET /:id/pdf
-- `frontend/src/lib/api.js` — ordersApi.downloadPdf
-- `frontend/src/pages/OrderDetail.jsx` — onClick en botón PDF
-
----
-
-### 17. Búsqueda avanzada y filtros
-
-**Órdenes**:
-- Filtro por prioridad (baja, media, alta, urgente)
-- Filtro por rango de fechas (desde / hasta)
-- Backend: agregados parámetros `priority`, `startDate`, `endDate`
-
-**Equipos**:
-- Filtro por tipo de equipo (laptop, desktop, smartphone, etc.)
-
-**Archivos modificados**:
-- `backend/src/controllers/orderController.js` — filtros priority, startDate, endDate
-- `backend/src/controllers/equipmentController.js` — filtro type
-- `frontend/src/pages/Orders.jsx` — select de prioridad + inputs de fecha
-- `frontend/src/pages/Equipment.jsx` — select de tipo de equipo
-
----
-
-### 18. Archivar / Eliminar clientes, equipos y órdenes
-
-**Problema**: No se podían eliminar registros y los datos se acumulaban sin posibilidad de limpieza.
-
-**Solución**: Implementado sistema de archivado (soft-delete) + eliminación permanente.
-
-**Modelo de datos**:
-- Agregados campos `archived` (Boolean) y `archivedAt` (DateTime?) a Client, Equipment y RepairOrder
-
-**Backend**:
-- Listas filtran `archived: false` por defecto. Se pasa `showArchived=true` para ver archivados
-- Controladores: `archive()`, `unarchive()`, `remove()` (permanente)
-- Rutas: `PUT /:id/archive`, `PUT /:id/unarchive`, `DELETE /:id`
-
-**Frontend**:
-- Botón "Archivar" / "Restaurar" en detalle de cliente y orden
-- Botón "Archivar" / "Restaurar" por fila en tabla de equipos
-- Botón "Eliminar" con confirmación en detalle de cliente
-- Toggle "Archivados" en listas de Clientes, Órdenes y Equipos
-
-**Archivos modificados**:
-- `backend/prisma/schema.prisma` — campos archived + archivedAt
-- `backend/src/controllers/clientController.js` — archive, unarchive
-- `backend/src/controllers/equipmentController.js` — archive, unarchive
-- `backend/src/controllers/orderController.js` — archive, unarchive
-- `backend/src/routes/clients.js` — rutas archive/unarchive
-- `backend/src/routes/equipment.js` — rutas archive/unarchive
-- `backend/src/routes/orders.js` — rutas archive/unarchive
-- `frontend/src/lib/api.js` — archive, unarchive en APIs
-- `frontend/src/pages/Clients.jsx` — toggle archivados
-- `frontend/src/pages/ClientDetail.jsx` — botones archivar/restaurar/eliminar
-- `frontend/src/pages/Orders.jsx` — toggle archivados
-- `frontend/src/pages/OrderDetail.jsx` — botones archivar/restaurar
-- `frontend/src/pages/Equipment.jsx` — toggle archivados + acciones por fila
-
----
-
----
-
-### 19. Tooltips en botones de equipos
-
-- Agregados tooltips al hacer hover sobre los iconos de editar, archivar/restaurar y eliminar en la tabla de equipos
-
-**Archivos modificados**:
-- `frontend/src/pages/Equipment.jsx` — tooltips con group-hover
-
----
-
-### 20. Botón eliminar en detalle de orden
-
-- Agregada mutación `deleteMutation` en `OrderDetail.jsx`
-- Botón "Eliminar orden" con confirmación en sección de acciones
-- Agregado `ordersApi.delete` en `api.js`
-- Al eliminar, redirige a `/orders`
-
-**Archivos modificados**:
-- `frontend/src/lib/api.js` — delete en ordersApi
-- `frontend/src/pages/OrderDetail.jsx` — deleteMutation + botón eliminar
-
----
-
-### 21. Diseño responsive
-
-**Sidebar responsive**:
-- Sidebar se convierte en overlay deslizable en pantallas menores a `lg` (1024px)
-- Botón hamburguesa (`Menu`) en TopBar para abrir sidebar en móvil
-- Fondo oscuro (overlay) al abrir sidebar, cierra al hacer clic fuera o en la X
-- Navegación cierra sidebar al hacer clic en un enlace
-
-**TopBar responsive**:
-- Fecha abreviada en móvil (día/mes), completa en desktop
-- Email del usuario oculto en tablets y móviles
-- Padding responsive (`px-4 sm:px-6`)
-- Botón menú hamburguesa visible solo en móvil (`lg:hidden`)
-
-**Pagination responsive**:
-- Texto "Página X de Y" oculto en móvil (`hidden sm:block`)
-
-**RecentOrdersTable**:
-- Envuelta en `overflow-x-auto` para scroll horizontal en móvil
-
-**WhatsApp QR**:
-- Código QR responsive: `w-48 h-48` en móvil, `w-64 h-64` en desktop
-
-**Card responsive**:
-- Padding de `.card-header` y `.card-body` responsivo: `px-4 sm:px-6` y `p-4 sm:p-6` para mejor espacio en móvil
-
-**Archivos modificados**:
-- `frontend/src/styles/globals.css` — padding responsive en card-header y card-body
-- `frontend/src/components/layout/DashboardLayout.jsx` — sidebarOpen state
-- `frontend/src/components/layout/Sidebar.jsx` — overlay responsive, props open/onClose
-- `frontend/src/components/layout/TopBar.jsx` — hamburger menu, fecha responsive
-- `frontend/src/components/ui/Pagination.jsx` — texto responsive
-- `frontend/src/components/dashboard/RecentOrdersTable.jsx` — overflow-x-auto
-- `frontend/src/pages/WhatsAppSettings.jsx` — QR responsive
-
----
-
----
-
-### 22. Autenticación local (reemplazo de Clerk)
-
-**Motivación**: Clerk requiere internet, cuenta externa y claves API. Para ejecución local y distribución portable, necesitamos auth 100% local.
-
-**Cambios en el backend**:
-
-1. **Esquema (Prisma)**:
-   - Agregado `password String?` al modelo `User`
-   - `clerkId` pasa de `String` a `String?` (opcional)
-   - Relación `RepairOrder.technician` ahora referencia `User.id` en vez de `User.clerkId`
-
-2. **Nuevas dependencias**: `bcryptjs` (hash contraseñas), `jsonwebtoken` (JWT)
-   - Eliminadas: `@clerk/clerk-sdk-node`, `svix`
-
-3. **Auth middleware** (`backend/src/middleware/auth.js`):
-   - `clerkMiddleware` → `authMiddleware`: verifica JWT local con `jsonwebtoken`
-   - `requireAuth` y `requireRole` mantienen la misma interfaz
-
-4. **Nuevo controlador** (`backend/src/controllers/authController.js`):
-   - `POST /api/auth/login` — login con email + password, devuelve JWT
-   - `POST /api/auth/register` — registro del primer usuario (solo si no hay usuarios)
-   - `GET /api/auth/me` — datos del usuario autenticado
-   - `GET /api/auth/users` — lista de usuarios
-
-5. **Seed** (`backend/prisma/seed.js`):
-   - Crea usuario admin por defecto configurable via env vars
-   - `SEED_EMAIL`, `SEED_NAME`, `SEED_PASSWORD`
-   - Default: `admin@gestortaller.cl` / `admin123`
-
-6. **Limpieza**:
-   - Ruta `webhooks.js` simplificada (Clerk ya no aplica)
-   - `routes/users.js` simplificada (sin sync con Clerk)
-   - `index.js` — removido webhook routes y clerkMiddleware
-
-**Cambios en el frontend**:
-
-1. **Eliminado**: `@clerk/clerk-react`, `ClerkProvider`, `ClerkTokenProvider`, `SignedIn/SignedOut/RedirectToSignIn`, `UserButton`, `useUser`
-
-2. **Nuevo AuthContext** (`frontend/src/context/AuthContext.jsx`):
-   - Provee `user`, `loading`, `login()`, `logout()`
-   - Al iniciar, verifica si hay token en localStorage y carga el usuario
-
-3. **Nueva página Login** (`frontend/src/pages/Login.jsx`):
-   - Formulario simple con email + contraseña
-   - Logo de la app centrado
-
-4. **TopBar reemplazado**:
-   - `UserButton` de Clerk → avatar con inicial del usuario
-   - Menú desplegable con "Cerrar sesión"
-
-5. **App.jsx**:
-   - `ProtectedRoute` usa `useAuth()` en vez de `SignedIn/SignedOut`
-   - Ruta `/login` pública
-
-6. **main.jsx**:
-   - Sin `ClerkProvider`
-   - Envuelve con `AuthProvider`
-
-**Archivos modificados**:
-- `backend/prisma/schema.prisma` — password, clerkId?, relación id
-- `backend/package.json` — bcryptjs + jsonwebtoken, removidos clerk+svix
-- `backend/src/index.js` — removido Clerk webhooks y clerkMiddleware
-- `backend/src/middleware/auth.js` — authMiddleware con JWT local
-- `backend/src/routes/users.js` — sin sync Clerk
-- `backend/src/routes/webhooks.js` — simplificado (sin Clerk)
-- `backend/.env` — removidas keys de Clerk
-- `frontend/package.json` — removido @clerk/clerk-react
-- `frontend/.env` — removida VITE_CLERK_PUBLISHABLE_KEY
-- `frontend/src/main.jsx` — sin ClerkProvider
-- `frontend/src/App.jsx` — login route + ProtectedRoute con AuthContext
-- `frontend/src/context/AuthContext.jsx` — nuevo
-- `frontend/src/pages/Login.jsx` — nuevo
-- `frontend/src/components/layout/TopBar.jsx` — avatar + menú logout
-- `frontend/src/lib/auth-token.js` — localStorage nativo
-
-**Archivos eliminados**:
-- `frontend/src/components/ClerkTokenProvider.jsx`
-
----
-
-### 23. Cambio de contraseña y registro desde login
-
-- **Backend**: Nuevo endpoint `PUT /api/auth/password` que recibe `currentPassword` + `newPassword`, verifica la actual y guarda la nueva con hash
-- **Frontend Login**: Toggle entre "Iniciar sesión" y "Crear primer usuario". El registro solo funciona si no hay usuarios (el backend ya lo validaba)
-- **TopBar**: Opción "Cambiar contraseña" en el menú de usuario que abre un modal con campos de contraseña actual y nueva
-
-**Archivos modificados**:
-- `backend/src/controllers/authController.js` — changePassword
-- `backend/src/routes/auth.js` — ruta PUT /password
 - `frontend/src/lib/api.js` — authApi
 - `frontend/src/pages/Login.jsx` — toggle register
 - `frontend/src/components/layout/TopBar.jsx` — modal cambio contraseña
+
+---
+
+### 24. Migración de PostgreSQL a SQLite
+
+**Motivación**: Cada instalación necesita su propia base de datos. Con PostgreSQL el usuario tiene que instalar y configurar un servidor de base de datos. SQLite es un solo archivo, cero configuración.
+
+**Cambios**:
+- `schema.prisma`: `provider` cambiado de `postgresql` a `sqlite`
+- Enums (`RepairStatus`, `Priority`, `UserRole`, `EquipmentType`) reemplazados por `String` (SQLite no soporta enums)
+- `Decimal` → `Float` (compatible con SQLite)
+- Eliminado `mode: 'insensitive'` de las búsquedas (SQLite es case-insensitive por defecto con `LIKE`)
+- `DATABASE_URL` en `.env` cambia de `postgresql://...` a `file:./dev.db`
+- `.gitignore` incluye `*.db` y `*.db-journal`
+
+**Cómo iniciar en un PC nuevo**:
+1. Clonar el repo, configurar `.env` (solo JWT_SECRET)
+
+Backend:
+```bash
+cd backend
+npm install
+npx prisma db push
+node prisma/seed.js   # crea admin@gestortaller.cl / admin123
+npm run dev
+```
+
+Frontend:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+**Archivos modificados**:
+- `backend/prisma/schema.prisma` — SQLite + String en vez de enums
+- `backend/.env` — DATABASE_URL sqlite
+- `backend/src/controllers/orderController.js` — sin mode insensitive
+- `backend/src/controllers/equipmentController.js` — sin mode insensitive
+- `backend/src/controllers/clientController.js` — sin mode insensitive
+- `.gitignore` — *.db
 
 ---
 

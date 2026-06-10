@@ -12,8 +12,8 @@ export async function list(req, res, next) {
     if (type) where.type = type;
     if (search) {
       where.OR = [
-        { brand: { contains: search, mode: 'insensitive' } },
-        { model: { contains: search, mode: 'insensitive' } },
+        { brand: { contains: search } },
+        { model: { contains: search } },
         { serialNumber: { contains: search } },
       ];
     }

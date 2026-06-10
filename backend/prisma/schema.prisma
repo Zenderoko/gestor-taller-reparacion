@@ -3,44 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-enum RepairStatus {
-  PENDING
-  DIAGNOSING
-  IN_PROGRESS
-  WAITING_PARTS
-  READY_FOR_PICKUP
-  COMPLETED
-  DELIVERED
-  CANCELLED
-}
-
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
-
-enum UserRole {
-  ADMIN
-  TECHNICIAN
-  RECEPTIONIST
-}
-
-enum EquipmentType {
-  LAPTOP
-  DESKTOP
-  SMARTPHONE
-  TABLET
-  CONSOLE
-  PRINTER
-  MONITOR
-  AUDIO
-  OTHER
 }
 
 model User {
@@ -49,7 +13,7 @@ model User {
   email      String   @unique
   name       String
   password   String?
-  role       UserRole @default(RECEPTIONIST)
+  role       String   @default("RECEPTIONIST")
   avatarUrl  String?
   phone      String?
   isActive   Boolean  @default(true)
@@ -83,9 +47,9 @@ model Client {
 }
 
 model Equipment {
-  id           String    @id @default(cuid())
+  id           String  @id @default(cuid())
   clientId     String
-  type         EquipmentType
+  type         String
   brand        String
   model        String
   serialNumber String?
@@ -93,10 +57,10 @@ model Equipment {
   accessories  String?
   condition    String?
   notes        String?
-  archived     Boolean   @default(false)
+  archived     Boolean @default(false)
   archivedAt   DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   client Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   orders RepairOrder[]
@@ -105,26 +69,26 @@ model Equipment {
 }
 
 model RepairOrder {
-  id            String       @id @default(cuid())
-  orderNumber   String       @unique
+  id            String   @id @default(cuid())
+  orderNumber   String   @unique
   clientId      String
   equipmentId   String
   reportedIssue String
   diagnosis     String?
-  status        RepairStatus @default(PENDING)
-  priority      Priority     @default(MEDIUM)
-  estimatedCost Decimal      @default(0)
-  totalCost     Decimal      @default(0)
-  deposit       Decimal      @default(0)
+  status        String   @default("PENDING")
+  priority      String   @default("MEDIUM")
+  estimatedCost Float    @default(0)
+  totalCost     Float    @default(0)
+  deposit       Float    @default(0)
   notes         String?
   internalNotes String?
   assignedTo    String?
-  archived      Boolean      @default(false)
+  archived      Boolean  @default(false)
   archivedAt    DateTime?
   startDate     DateTime?
   completedDate DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   client   Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
@@ -136,12 +100,12 @@ model RepairOrder {
 }
 
 model StatusHistory {
-  id            String       @id @default(cuid())
+  id            String   @id @default(cuid())
   repairOrderId String
-  status        RepairStatus
+  status        String
   note          String?
   createdBy     String?
-  createdAt     DateTime     @default(now())
+  createdAt     DateTime @default(now())
 
   repairOrder RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
 
@@ -149,9 +113,9 @@ model StatusHistory {
 }
 
 model Payment {
-  id            String   @id @default(cuid())
+  id            String @id @default(cuid())
   repairOrderId String
-  amount        Decimal
+  amount        Float
   method        String?
   reference     String?
   note          String?

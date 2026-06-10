@@ -11,9 +11,9 @@ export async function list(req, res, next) {
     if (showArchived !== 'true') where.archived = false;
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search } },
         { phone: { contains: search } },
-        { email: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search } },
         { documentId: { contains: search } },
       ];
     }

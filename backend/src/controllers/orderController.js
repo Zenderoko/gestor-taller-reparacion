@@ -23,8 +23,8 @@ export async function list(req, res, next) {
     }
     if (search) {
       where.OR = [
-        { orderNumber: { contains: search, mode: 'insensitive' } },
-        { reportedIssue: { contains: search, mode: 'insensitive' } },
+        { orderNumber: { contains: search } },
+        { reportedIssue: { contains: search } },
       ];
     }
 

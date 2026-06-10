@@ -5,3 +5,5 @@ dist/
 .DS_Store
 tokens/
 .wpp-session/
+*.db
+*.db-journal
