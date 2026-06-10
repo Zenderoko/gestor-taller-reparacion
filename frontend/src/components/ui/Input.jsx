@@ -2,9 +2,9 @@ import { forwardRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Eye, EyeOff } from 'lucide-react';
 
-const Input = forwardRef(({ className, label, error, ...props }, ref) => {
+const Input = forwardRef(({ className, label, error, type, ...props }, ref) => {
   const [showPassword, setShowPassword] = useState(false);
-  const isPassword = props.type === 'password';
+  const isPassword = type === 'password';
 
   return (
     <div className="space-y-1">
@@ -17,7 +17,7 @@ const Input = forwardRef(({ className, label, error, ...props }, ref) => {
       <div className="relative">
         <input
           ref={ref}
-          type={isPassword && showPassword ? 'text' : props.type}
+          type={isPassword && showPassword ? 'text' : type}
           className={cn(
             'block w-full rounded-lg border px-3 py-2 text-sm transition-colors placeholder:text-secondary-400',
             'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
