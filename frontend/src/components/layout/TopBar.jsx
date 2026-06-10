@@ -15,6 +15,7 @@ export default function TopBar({ onMenuClick }) {
   const [pwModal, setPwModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
 
   const handleLogout = () => {
@@ -24,8 +25,12 @@ export default function TopBar({ onMenuClick }) {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    if (!currentPassword || !newPassword) {
+    if (!currentPassword || !newPassword || !confirmPassword) {
       toast.error('Completa todos los campos');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Las contraseñas no coinciden');
       return;
     }
     setPwLoading(true);
@@ -35,6 +40,7 @@ export default function TopBar({ onMenuClick }) {
       setPwModal(false);
       setCurrentPassword('');
       setNewPassword('');
+      setConfirmPassword('');
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -123,8 +129,15 @@ export default function TopBar({ onMenuClick }) {
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="Mínimo 6 caracteres"
           />
+          <Input
+            label="Confirmar nueva contraseña"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Repite la contraseña"
+          />
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="secondary" onClick={() => { setPwModal(false); setCurrentPassword(''); setNewPassword(''); }}>
+            <Button type="button" variant="secondary" onClick={() => { setPwModal(false); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }}>
               Cancelar
             </Button>
             <Button type="submit" loading={pwLoading}>Guardar</Button>
