@@ -121,6 +121,41 @@ export async function getMe(req, res, next) {
   }
 }
 
+export async function changePassword(req, res, next) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Contraseña actual y nueva son requeridas' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.auth.userId } });
+    if (!user || !user.password) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) {
+      return res.status(401).json({ error: 'La contraseña actual no es correcta' });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashed },
+    });
+
+    logger.info('Contraseña cambiada', { userId: user.id });
+    res.json({ data: { message: 'Contraseña actualizada correctamente' } });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function listUsers(req, res, next) {
   try {
     const users = await prisma.user.findMany({

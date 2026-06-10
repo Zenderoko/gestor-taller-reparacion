@@ -73,6 +73,12 @@ export const usersApi = {
   list: () => api.get('/users'),
 };
 
+// Auth
+export const authApi = {
+  changePassword: (data) => api.put('/auth/password', data),
+  register: (data) => api.post('/auth/register', data),
+};
+
 // WhatsApp
 export const whatsappApi = {
   getStatus: () => api.get('/whatsapp/status'),

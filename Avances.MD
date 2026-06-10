@@ -430,6 +430,21 @@ Agregados modales de edición para las tres entidades principales:
 
 ---
 
+### 23. Cambio de contraseña y registro desde login
+
+- **Backend**: Nuevo endpoint `PUT /api/auth/password` que recibe `currentPassword` + `newPassword`, verifica la actual y guarda la nueva con hash
+- **Frontend Login**: Toggle entre "Iniciar sesión" y "Crear primer usuario". El registro solo funciona si no hay usuarios (el backend ya lo validaba)
+- **TopBar**: Opción "Cambiar contraseña" en el menú de usuario que abre un modal con campos de contraseña actual y nueva
+
+**Archivos modificados**:
+- `backend/src/controllers/authController.js` — changePassword
+- `backend/src/routes/auth.js` — ruta PUT /password
+- `frontend/src/lib/api.js` — authApi
+- `frontend/src/pages/Login.jsx` — toggle register
+- `frontend/src/components/layout/TopBar.jsx` — modal cambio contraseña
+
+---
+
 ### Pendientes / Próximos pasos
 
 - **WhatsApp — número dedicado para el taller**: Usar un chip prepago solo para el taller, instalar WhatsApp en un celular viejo y escanear el QR con ese número. Así los mensajes salen del número del taller, no del personal.

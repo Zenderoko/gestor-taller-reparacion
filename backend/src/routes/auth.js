@@ -30,4 +30,15 @@ router.post(
 router.get('/me', requireAuth, authCtrl.getMe);
 router.get('/users', requireAuth, authCtrl.listUsers);
 
+router.put(
+  '/password',
+  requireAuth,
+  [
+    body('currentPassword').notEmpty().withMessage('Contraseña actual requerida'),
+    body('newPassword').isLength({ min: 6 }).withMessage('Mínimo 6 caracteres'),
+  ],
+  validate,
+  authCtrl.changePassword
+);
+
 export default router;
