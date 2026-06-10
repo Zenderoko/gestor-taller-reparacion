@@ -70,7 +70,15 @@ export async function getById(req, res, next) {
 
 export async function create(req, res, next) {
   try {
-    const { clientId, equipmentId, reportedIssue, priority, estimatedCost, notes } = req.body;
+    let { clientId, equipmentId, reportedIssue, priority, estimatedCost, notes } = req.body;
+    estimatedCost = estimatedCost !== undefined && estimatedCost !== '' ? Number(estimatedCost) : 0;
+
+    const [client, equipment] = await Promise.all([
+      prisma.client.findUnique({ where: { id: clientId } }),
+      prisma.equipment.findUnique({ where: { id: equipmentId } }),
+    ]);
+    if (!client) throw new AppError('Cliente no encontrado', 404);
+    if (!equipment) throw new AppError('Equipo no encontrado', 404);
 
     const orderNumber = await generateOrderNumber();
 
@@ -136,8 +144,12 @@ export async function updateStatus(req, res, next) {
 
 export async function update(req, res, next) {
   try {
-    const { diagnosis, totalCost, deposit, estimatedCost, internalNotes, notes, assignedTo, priority } = req.body;
+    let { diagnosis, totalCost, deposit, estimatedCost, internalNotes, notes, assignedTo, priority } = req.body;
     const current = await prisma.repairOrder.findUnique({ where: { id: req.params.id } });
+
+    if (totalCost !== undefined && totalCost !== '') totalCost = Number(totalCost);
+    if (deposit !== undefined && deposit !== '') deposit = Number(deposit);
+    if (estimatedCost !== undefined && estimatedCost !== '') estimatedCost = Number(estimatedCost);
 
     const data = { diagnosis, totalCost, deposit, estimatedCost, internalNotes, notes, assignedTo, priority };
     const order = await prisma.repairOrder.update({
@@ -168,7 +180,8 @@ export async function update(req, res, next) {
 export async function addPayment(req, res, next) {
   try {
     const { id } = req.params;
-    const { amount, method, reference, note } = req.body;
+    let { amount, method, reference, note } = req.body;
+    amount = Number(amount);
 
     const [payment] = await prisma.$transaction([
       prisma.payment.create({

@@ -93,6 +93,8 @@ export default function OrderDetail() {
   const deleteMutation = useMutation({
     mutationFn: () => ordersApi.delete(id),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Orden eliminada');
       navigate('/orders');
     },
