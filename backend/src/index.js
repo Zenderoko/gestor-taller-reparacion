@@ -6,13 +6,13 @@ import morgan from 'morgan';
 import { PrismaClient } from '@prisma/client';
 
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
-import { clerkMiddleware } from './middleware/auth.js';
+import { authMiddleware } from './middleware/auth.js';
 
+import authRoutes from './routes/auth.js';
 import clientRoutes from './routes/clients.js';
 import equipmentRoutes from './routes/equipment.js';
 import orderRoutes from './routes/orders.js';
 import dashboardRoutes from './routes/dashboard.js';
-import webhookRoutes from './routes/webhooks.js';
 import userRoutes from './routes/users.js';
 import whatsappRoutes from './routes/whatsapp.js';
 
@@ -25,13 +25,10 @@ app.use(helmet());
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
 app.use(morgan('dev'));
 
-app.use('/api/webhooks', express.raw({ type: 'application/json' }));
-app.use('/api/webhooks', webhookRoutes);
-
 app.use(express.json());
+app.use(authMiddleware);
 
-app.use(clerkMiddleware);
-
+app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/orders', orderRoutes);

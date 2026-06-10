@@ -13,17 +13,17 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@clerk/clerk-sdk-node": "^4.13.23",
     "@prisma/client": "^5.10.0",
     "@wppconnect-team/wppconnect": "^2.2.1",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.18.2",
     "express-validator": "^7.0.1",
     "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.0",
     "pdfkit": "^0.15.0",
-    "svix": "^1.17.0",
     "twilio": "^6.0.2"
   },
   "devDependencies": {

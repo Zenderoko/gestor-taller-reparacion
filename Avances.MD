@@ -348,11 +348,141 @@ Agregados modales de edición para las tres entidades principales:
 
 ---
 
+---
+
+### 22. Autenticación local (reemplazo de Clerk)
+
+**Motivación**: Clerk requiere internet, cuenta externa y claves API. Para ejecución local y distribución portable, necesitamos auth 100% local.
+
+**Cambios en el backend**:
+
+1. **Esquema (Prisma)**:
+   - Agregado `password String?` al modelo `User`
+   - `clerkId` pasa de `String` a `String?` (opcional)
+   - Relación `RepairOrder.technician` ahora referencia `User.id` en vez de `User.clerkId`
+
+2. **Nuevas dependencias**: `bcryptjs` (hash contraseñas), `jsonwebtoken` (JWT)
+   - Eliminadas: `@clerk/clerk-sdk-node`, `svix`
+
+3. **Auth middleware** (`backend/src/middleware/auth.js`):
+   - `clerkMiddleware` → `authMiddleware`: verifica JWT local con `jsonwebtoken`
+   - `requireAuth` y `requireRole` mantienen la misma interfaz
+
+4. **Nuevo controlador** (`backend/src/controllers/authController.js`):
+   - `POST /api/auth/login` — login con email + password, devuelve JWT
+   - `POST /api/auth/register` — registro del primer usuario (solo si no hay usuarios)
+   - `GET /api/auth/me` — datos del usuario autenticado
+   - `GET /api/auth/users` — lista de usuarios
+
+5. **Seed** (`backend/prisma/seed.js`):
+   - Crea usuario admin por defecto configurable via env vars
+   - `SEED_EMAIL`, `SEED_NAME`, `SEED_PASSWORD`
+   - Default: `admin@gestortaller.cl` / `admin123`
+
+6. **Limpieza**:
+   - Ruta `webhooks.js` simplificada (Clerk ya no aplica)
+   - `routes/users.js` simplificada (sin sync con Clerk)
+   - `index.js` — removido webhook routes y clerkMiddleware
+
+**Cambios en el frontend**:
+
+1. **Eliminado**: `@clerk/clerk-react`, `ClerkProvider`, `ClerkTokenProvider`, `SignedIn/SignedOut/RedirectToSignIn`, `UserButton`, `useUser`
+
+2. **Nuevo AuthContext** (`frontend/src/context/AuthContext.jsx`):
+   - Provee `user`, `loading`, `login()`, `logout()`
+   - Al iniciar, verifica si hay token en localStorage y carga el usuario
+
+3. **Nueva página Login** (`frontend/src/pages/Login.jsx`):
+   - Formulario simple con email + contraseña
+   - Logo de la app centrado
+
+4. **TopBar reemplazado**:
+   - `UserButton` de Clerk → avatar con inicial del usuario
+   - Menú desplegable con "Cerrar sesión"
+
+5. **App.jsx**:
+   - `ProtectedRoute` usa `useAuth()` en vez de `SignedIn/SignedOut`
+   - Ruta `/login` pública
+
+6. **main.jsx**:
+   - Sin `ClerkProvider`
+   - Envuelve con `AuthProvider`
+
+**Archivos modificados**:
+- `backend/prisma/schema.prisma` — password, clerkId?, relación id
+- `backend/package.json` — bcryptjs + jsonwebtoken, removidos clerk+svix
+- `backend/src/index.js` — removido Clerk webhooks y clerkMiddleware
+- `backend/src/middleware/auth.js` — authMiddleware con JWT local
+- `backend/src/routes/users.js` — sin sync Clerk
+- `backend/src/routes/webhooks.js` — simplificado (sin Clerk)
+- `backend/.env` — removidas keys de Clerk
+- `frontend/package.json` — removido @clerk/clerk-react
+- `frontend/.env` — removida VITE_CLERK_PUBLISHABLE_KEY
+- `frontend/src/main.jsx` — sin ClerkProvider
+- `frontend/src/App.jsx` — login route + ProtectedRoute con AuthContext
+- `frontend/src/context/AuthContext.jsx` — nuevo
+- `frontend/src/pages/Login.jsx` — nuevo
+- `frontend/src/components/layout/TopBar.jsx` — avatar + menú logout
+- `frontend/src/lib/auth-token.js` — localStorage nativo
+
+**Archivos eliminados**:
+- `frontend/src/components/ClerkTokenProvider.jsx`
+
+---
+
 ### Pendientes / Próximos pasos
 
 - **WhatsApp — número dedicado para el taller**: Usar un chip prepago solo para el taller, instalar WhatsApp en un celular viejo y escanear el QR con ese número. Así los mensajes salen del número del taller, no del personal.
 - **WhatsApp Business API**: Alternativa más profesional con hasta 1000 mensajes gratis al mes vía Meta, requiere verificación de empresa.
-- Pasar a producción (cambiar keys de desarrollo a producción en Clerk)
+
+--- 
+
+### 24. Preparación para producción (NAS)
+
+**Objetivo**: Poder instalar el proyecto en un NAS para venderlo como solución llave en mano (NAS + software funcionando).
+
+#### Cambios necesarios:
+
+1. **Clerk — Keys de producción**
+   - `CLERK_SECRET_KEY`: `sk_test_...` → `sk_live_...` (en `backend/.env`)
+   - `CLERK_PUBLISHABLE_KEY`: `pk_test_...` → `pk_live_...` (en `backend/.env`)
+   - `VITE_CLERK_PUBLISHABLE_KEY`: `pk_test_...` → `pk_live_...` (en `frontend/.env`)
+   - **Webhook**: El endpoint actual `POST /api/webhooks/clerk` no cambia. En el Dashboard de Clerk hay que crear un nuevo endpoint de producción con la misma URL pero apuntando a la IP/dominio del NAS, usando el nuevo `CLERK_WEBHOOK_SECRET` que Clerk genera.
+
+2. **Frontend — Build de producción**
+   - `npm run build` genera `frontend/dist/` con archivos estáticos minificados
+   - Ya no se necesita Vite corriendo (solo para desarrollo)
+   - Los archivos estáticos se sirven desde Express o Nginx
+
+3. **Backend — Servir frontend estático**
+   - Agregar `express.static` para servir `frontend/dist/`
+   - Ya no se necesita el proxy de Vite ni CORS entre frontend/backend
+
+4. **Variables de entorno para producción** (`backend/.env`)
+   ```env
+   NODE_ENV=production
+   FRONTEND_URL=https://ip-del-nas:3001
+   APP_URL=https://ip-del-nas:3001
+   ```
+
+5. **PM2 — Gestor de procesos**
+   - Instalar PM2 globalmente: `npm install -g pm2`
+   - Crear archivo `ecosystem.config.js` para arranque automático
+   - `pm2 startup` para que el backend arranque al encender el NAS
+
+6. **Logging — Menos verboso en producción**
+   - Ya implementado via `logger.js`: en `NODE_ENV=production` solo registra desde nivel `info` (omite `debug`)
+
+7. **Seguridad**
+   - Helmet ya está configurado (middleware de seguridad HTTP)
+   - CORS configurado dinámicamente según `FRONTEND_URL`
+   - Revisar que Clerk JWT tenga `clockSkewInMs` suficiente para entornos con hora no sincronizada (ya configurado en auth.js)
+
+**Archivos a modificar**:
+- `backend/.env` — claves de producción + NODE_ENV
+- `frontend/.env` — VITE_CLERK_PUBLISHABLE_KEY de producción
+- `backend/src/index.js` — agregar express.static para servir frontend
+- `backend/ecosystem.config.js` — nuevo (configuración PM2)
 
 ---
 

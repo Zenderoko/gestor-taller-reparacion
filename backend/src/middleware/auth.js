@@ -1,24 +1,22 @@
-import { clerkClient } from '@clerk/clerk-sdk-node';
+import jwt from 'jsonwebtoken';
 
-export async function clerkMiddleware(req, res, next) {
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+
+export async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith('Bearer ')) {
-    req.auth = { userId: null, sessionId: null };
+    req.auth = { userId: null };
     return next();
   }
 
   const token = authHeader.split(' ')[1];
 
   try {
-    const payload = await clerkClient.verifyToken(token, {
-      clockSkewInMs: 600_000,
-      jwksCacheTtlInMs: 600_000,
-    });
-    req.auth = { userId: payload.sub, sessionId: payload.sid };
-  } catch (err) {
-    console.error('[AUTH]', err.message);
-    req.auth = { userId: null, sessionId: null };
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.auth = { userId: payload.sub, userRole: payload.role };
+  } catch {
+    req.auth = { userId: null };
   }
 
   next();
@@ -32,19 +30,12 @@ export function requireAuth(req, res, next) {
 }
 
 export function requireRole(...roles) {
-  return async (req, res, next) => {
+  return (req, res, next) => {
     if (!req.auth?.userId) {
       return res.status(401).json({ error: 'No autorizado' });
     }
-    try {
-      const user = await clerkClient.users.getUser(req.auth.userId);
-      const role = user.publicMetadata?.role || 'RECEPTIONIST';
-      if (!roles.includes(role)) {
-        return res.status(403).json({ error: 'Permisos insuficientes' });
-      }
-      req.userRole = role;
-    } catch {
-      return res.status(403).json({ error: 'Error verificando permisos' });
+    if (!roles.includes(req.auth.userRole)) {
+      return res.status(403).json({ error: 'Permisos insuficientes' });
     }
     next();
   };

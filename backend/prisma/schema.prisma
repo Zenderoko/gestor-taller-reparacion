@@ -45,9 +45,10 @@ enum EquipmentType {
 
 model User {
   id         String   @id @default(cuid())
-  clerkId    String   @unique
+  clerkId    String?  @unique
   email      String   @unique
   name       String
+  password   String?
   role       UserRole @default(RECEPTIONIST)
   avatarUrl  String?
   phone      String?
@@ -127,7 +128,7 @@ model RepairOrder {
 
   client   Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-  technician User?   @relation("AssignedTechnician", fields: [assignedTo], references: [clerkId])
+  technician User?   @relation("AssignedTechnician", fields: [assignedTo], references: [id])
   statusHistory StatusHistory[]
   payments     Payment[]
 

@@ -1,15 +1,21 @@
-let getTokenFn = null;
+const TOKEN_KEY = 'gestor_taller_token';
 
-export function setGetToken(fn) {
-  getTokenFn = fn;
+export function setToken(token) {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+  }
 }
 
-export async function getAuthToken() {
-  if (!getTokenFn) return null;
-  try {
-    const token = await getTokenFn({ skipCache: true });
-    return token;
-  } catch {
-    return null;
-  }
+export function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function getAuthToken() {
+  return Promise.resolve(getToken());
+}
+
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
 }
