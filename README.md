@@ -6,12 +6,12 @@ SaaS de gestión para talleres de reparación electrónicos.
 
 | Capa       | Tecnología                          |
 |------------|-------------------------------------|
-| Frontend   | React 18, Vite, TailwindCSS, Clerk |
+| Frontend   | React 18, Vite, TailwindCSS         |
 | Backend    | Node.js, Express                    |
-| DB         | PostgreSQL + Prisma ORM             |
-| Auth       | Clerk (auth sin fricción)           |
+| DB         | SQLite + Prisma ORM                 |
+| Auth       | JWT local (bcrypt + jsonwebtoken)   |
 | UI         | Lucide React, Recharts              |
-| Forms      | React Hook Form + Zod               |
+| Forms      | React Hook Form                     |
 | API Client | Axios + TanStack React Query        |
 
 ## Estructura del proyecto
@@ -19,7 +19,7 @@ SaaS de gestión para talleres de reparación electrónicos.
 ```
 gestor-taller/
 ├── backend/
-│   ├── prisma/          # Schema y migraciones
+│   ├── prisma/          # Schema y base SQLite
 │   ├── src/
 │   │   ├── config/      # Constantes, logger
 │   │   ├── controllers/ # Lógica de negocio
@@ -38,104 +38,86 @@ gestor-taller/
 │   │   ├── styles/      # CSS global (Tailwind)
 │   │   └── App.jsx      # Router principal
 │   ├── index.html
-│   ├── vite.config.js
-│   └── tailwind.config.js
-└── docs/
-    └── ROADMAP.md
+│   └── vite.config.js
+├── ecosystem.config.js  # Config para PM2
+├── start.sh             # Script de inicio para NAS
+└── package.json         # Scripts de setup y start
 ```
 
 ## Requisitos
 
-- Node.js 18+
-- PostgreSQL (local o cloud)
+- **Node.js 18+** (solo esto, no necesita PostgreSQL ni nada más)
 
-## Setup rápido (para probar en otro equipo)
-
-### 1. Base de datos
-
-**Opción A — PostgreSQL local:**
-```bash
-# Crear la base de datos
-psql -U postgres -c "CREATE DATABASE gestor_taller;"
-```
-
-**Opción B — Neon (cloud gratis, sin instalar PostgreSQL):**
-1. Crear cuenta en https://neon.tech
-2. Crear proyecto y copiar connection string
-
-### 2. Backend
+## Instalación rápida (desarrollo)
 
 ```bash
-cd backend
-cp .env.example .env
-```
-
-Editar `backend/.env`:
-```env
-# Si usas PostgreSQL local:
-DATABASE_URL="postgresql://postgres:TU_PASS@localhost:5432/gestor_taller?schema=public"
-
-# Si usas Neon (cloud):
-# DATABASE_URL="postgresql://user:pass@ep-xxxx.us-east-2.aws.neon.tech/gestor_taller?sslmode=require"
-
-# Clerk (ya vienen keys de desarrollo que funcionan en cualquier PC)
-CLERK_SECRET_KEY="sk_test_YpBYmsBDiNDh18qTJBHFRhzHtTmvQAuPBQ8bHFy2sl"
-CLERK_WEBHOOK_SECRET="whsec_JytVYDeDGlfRnw52IZIjW5Jkje5x6p/6"
-```
-
-```bash
-npm install
-npx prisma migrate dev --name init
-npm run dev
-# Servidor en http://localhost:3001
-```
-
-### 3. Frontend
-
-```bash
-cd frontend
-cp .env.example .env
-npm install
-npm run dev
-# Abrir http://localhost:5173
-```
-
-> Las keys de Clerk en los `.env` son de **desarrollo** y funcionan en cualquier máquina. Para producción se cambian por keys reales.
-
-### 4. Probar desde otro equipo
-
-```bash
-# Clonar el repo
+# 1. Clonar
 git clone https://github.com/Zenderoko/gestor-taller-reparacion.git
 cd gestor-taller-reparacion
 
-# Seguir pasos 1, 2 y 3 de arriba (BD → Backend → Frontend)
+# 2. Backend
+cd backend
+npm install
+npx prisma db push          # crea la base SQLite
+node prisma/seed.js         # crea admin@gestortaller.cl / admin123
+npm run dev                  # backend en http://localhost:3001
+
+# 3. Frontend (otra terminal)
+cd frontend
+npm install
+npm run dev                  # frontend en http://localhost:5173
 ```
+
+Abrir `http://localhost:5173` e iniciar sesión con `admin@gestortaller.cl` / `admin123`.
+
+## Instalación en producción (PC o NAS)
+
+```bash
+# Un solo comando
+git clone https://github.com/Zenderoko/gestor-taller-reparacion.git
+cd gestor-taller-reparacion
+npm run setup
+```
+
+Esto ejecuta automáticamente: instalar dependencias backend → crear DB → seed → instalar frontend → build.
+
+Luego editar `backend/.env`:
+
+```env
+NODE_ENV=production
+JWT_SECRET=clave-segura-aleatoria      # cambiar obligatoriamente
+APP_URL=http://192.168.1.100:3001      # IP del servidor
+```
+
+Iniciar:
+
+```bash
+npm start
+```
+
+Acceder desde cualquier equipo de la red: `http://192.168.1.100:3001`
 
 ## Variables de entorno
 
-### Backend (.env)
+### Backend (backend/.env)
 
 ```
-DATABASE_URL=postgresql://user:pass@localhost:5432/gestor_taller
-CLERK_SECRET_KEY=sk_test_...
-CLERK_WEBHOOK_SECRET=whsec_...
+DATABASE_URL="file:./dev.db"          # SQLite local
+JWT_SECRET=clave-secreta              # cambiar en producción
+JWT_EXPIRES_IN=7d
+NODE_ENV=development                  # o production
 PORT=3001
-FRONTEND_URL=http://localhost:5173
-APP_URL=http://localhost:5173
-```
-
-### Frontend (.env)
-
-```
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
-VITE_API_URL=http://localhost:3001/api
+FRONTEND_URL=http://localhost:5173    # solo para desarrollo
+APP_URL=http://localhost:3001         # IP o dominio público
 ```
 
 ## API REST
 
 | Método | Ruta                      | Descripción              |
 |--------|---------------------------|--------------------------|
+| POST   | /api/auth/login           | Iniciar sesión           |
+| POST   | /api/auth/register        | Registrar primer usuario |
+| PUT    | /api/auth/password        | Cambiar contraseña       |
 | GET    | /api/clients              | Listar clientes          |
 | POST   | /api/clients              | Crear cliente            |
 | GET    | /api/clients/:id          | Detalle cliente          |
@@ -155,11 +137,15 @@ VITE_API_URL=http://localhost:3001/api
 | POST   | /api/orders/:id/payments  | Registrar pago           |
 | POST   | /api/orders/:id/whatsapp  | Enviar WhatsApp          |
 | GET    | /api/orders/:id/pdf       | Descargar PDF            |
+| DELETE | /api/orders/:id           | Eliminar orden           |
+| PUT    | /api/orders/:id/archive   | Archivar orden           |
+| PUT    | /api/orders/:id/unarchive | Restaurar orden          |
 | GET    | /api/dashboard/stats      | Estadísticas dashboard   |
-| POST   | /api/webhooks/clerk       | Webhook Clerk            |
 | GET    | /api/users/me             | Usuario actual           |
+| GET    | /api/users                | Listar usuarios          |
 | GET    | /api/whatsapp/status      | Estado conexión WhatsApp |
 | POST   | /api/whatsapp/connect     | Conectar WhatsApp (QR)   |
+| GET    | /api/health               | Health check             |
 
 ## Flujo de estados de reparación
 
@@ -173,7 +159,7 @@ PENDING → DIAGNOSING → IN_PROGRESS → READY_FOR_PICKUP → COMPLETED → DE
 
 ## Modelo de datos (Prisma)
 
-- **User** - Usuarios sincronizados con Clerk
+- **User** - Usuarios del sistema (JWT local)
 - **Client** - Clientes del taller
 - **Equipment** - Equipos registrados por cliente
 - **RepairOrder** - Órdenes de reparación
@@ -181,6 +167,13 @@ PENDING → DIAGNOSING → IN_PROGRESS → READY_FOR_PICKUP → COMPLETED → DE
 - **Payment** - Pagos registrados
 - **AuditLog** - Log de auditoría
 
-## Próximos pasos
+## Despliegue en NAS con auto-inicio
 
-Ver [ROADMAP.md](docs/ROADMAP.md) para el plan de desarrollo completo.
+```bash
+npm install -g pm2
+pm2 start ecosystem.config.js
+pm2 startup   # arranque automático al encender
+pm2 save
+```
+
+Ver [Avances.MD](./Avances.MD) para documentación detallada.

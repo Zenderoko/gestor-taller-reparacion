@@ -219,6 +219,36 @@ Cada PC tiene su propio archivo SQLite (`backend/prisma/dev.db`), los datos nunc
 
 ---
 
+### Cómo instalar en un PC nuevo (producción)
+
+Un solo comando:
+
+```bash
+git clone <repo-url>
+cd gestor-taller-reparacion
+npm run setup
+```
+
+Esto ejecuta: instalar dependencias backend, crear DB SQLite, ejecutar seed, instalar dependencias frontend y construir.
+
+Luego editar `backend/.env`:
+
+```env
+NODE_ENV=production
+JWT_SECRET=clave-segura-aleatoria        # cambiar obligatoriamente
+APP_URL=http://IP-DEL-PC:3001           # IP del servidor
+```
+
+Iniciar:
+
+```bash
+npm start
+```
+
+Acceder desde cualquier equipo de la red: `http://IP-DEL-PC:3001`
+
+---
+
 ### Cómo desplegar en un NAS (producción)
 
 El NAS corre el backend y sirve el frontend. Otros equipos acceden solo con el navegador.
@@ -229,24 +259,16 @@ cd /ruta/en/el/nas
 git clone <repo-url>
 cd gestor-taller-reparacion
 
-# 2. Backend
-cd backend
-npm install
-npx prisma db push
-node prisma/seed.js
-# Editar backend/.env:
+# 2. Setup completo (una sola vez)
+npm run setup
+
+# 3. Editar backend/.env
 #   NODE_ENV=production
 #   JWT_SECRET=contraseña-segura-aleatoria
 #   APP_URL=http://192.168.1.100:3001   (IP del NAS)
 
-# 3. Construir frontend
-cd ../frontend
-npm install
-npm run build                # genera frontend/dist/
-
-# 4. Iniciar (solo backend)
-cd ../backend
-npm start                    # Sirve API + frontend en :3001
+# 4. Iniciar
+npm start
 ```
 
 **Acceso desde cualquier PC de la red**: `http://192.168.1.100:3001`
@@ -290,5 +312,6 @@ bash /ruta/a/gestor-taller-reparacion/start.sh
 ```
 
 **Archivos creados**:
+- `package.json` — script `setup` y `start` en la raíz
 - `ecosystem.config.js` — configuración PM2
 - `start.sh` — script de inicio para tareas programadas
