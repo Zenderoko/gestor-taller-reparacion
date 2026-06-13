@@ -89,6 +89,12 @@ JWT_SECRET=clave-segura-aleatoria      # cambiar obligatoriamente
 APP_URL=http://192.168.1.100:3001      # IP del servidor
 ```
 
+Para generar un `JWT_SECRET` seguro:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
 Iniciar:
 
 ```bash

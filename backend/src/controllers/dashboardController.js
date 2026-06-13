@@ -14,6 +14,7 @@ export async function getStats(req, res, next) {
       pendingOrders,
       revenue,
       totalCostAgg,
+      estimatedCostAgg,
       recentOrders,
       statusDistribution,
       upcomingDeliveries,
@@ -36,9 +37,11 @@ export async function getStats(req, res, next) {
       }),
       prisma.repairOrder.aggregate({
         _sum: { totalCost: true },
-        where: {
-          NOT: { status: 'CANCELLED', deposit: 0 },
-        },
+        where: { status: { not: 'CANCELLED' }, totalCost: { gt: 0 } },
+      }),
+      prisma.repairOrder.aggregate({
+        _sum: { estimatedCost: true },
+        where: { status: { not: 'CANCELLED' } },
       }),
       prisma.repairOrder.findMany({
         take: 10,
@@ -70,7 +73,7 @@ export async function getStats(req, res, next) {
           totalEquipment,
           pendingOrders,
           revenueThisMonth: revenue._sum.amount || 0,
-          totalCost: totalCostAgg._sum.totalCost || 0,
+          totalCost: totalCostAgg._sum.totalCost || estimatedCostAgg._sum.estimatedCost || 0,
         },
         recentOrders,
         statusDistribution: statusDistribution.map((s) => ({

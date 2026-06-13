@@ -37,7 +37,7 @@ export default function RecentOrdersTable({ orders }) {
             </td>
             <td className="py-3 pr-4"><StatusBadge status={order.status} /></td>
             <td className="hidden sm:table-cell py-3 pr-4 text-secondary-500">{formatDate(order.createdAt)}</td>
-            <td className="hidden sm:table-cell py-3 pr-4 text-right font-medium">{formatCurrency(order.totalCost)}</td>
+            <td className="hidden sm:table-cell py-3 pr-4 text-right font-medium">{formatCurrency(Number(order.totalCost) || Number(order.estimatedCost))}</td>
             <td className="hidden sm:table-cell py-3 text-right font-medium text-secondary-600">
               {(() => {
                 const saldo = (Number(order.totalCost) || Number(order.estimatedCost)) - Number(order.deposit);
