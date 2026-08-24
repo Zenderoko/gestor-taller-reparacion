@@ -7,3 +7,5 @@ tokens/
 .wpp-session/
 *.db
 *.db-journal
+backend/login.json
+backend/client_id.txt

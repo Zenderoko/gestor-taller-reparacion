@@ -147,9 +147,10 @@ export async function update(req, res, next) {
     let { diagnosis, totalCost, deposit, estimatedCost, internalNotes, notes, assignedTo, priority } = req.body;
     const current = await prisma.repairOrder.findUnique({ where: { id: req.params.id } });
 
-    if (totalCost !== undefined && totalCost !== '') totalCost = Number(totalCost);
-    if (deposit !== undefined && deposit !== '') deposit = Number(deposit);
-    if (estimatedCost !== undefined && estimatedCost !== '') estimatedCost = Number(estimatedCost);
+    const toNumber = (v) => (v === undefined || v === null || v === '') ? undefined : Number(v);
+    totalCost = toNumber(totalCost);
+    deposit = toNumber(deposit);
+    estimatedCost = toNumber(estimatedCost);
 
     const data = { diagnosis, totalCost, deposit, estimatedCost, internalNotes, notes, assignedTo, priority };
     const order = await prisma.repairOrder.update({
