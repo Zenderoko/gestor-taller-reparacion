@@ -126,6 +126,17 @@ model Payment {
   @@map("payments")
 }
 
+model MessageTemplate {
+  id        String   @id @default(cuid())
+  status    String   @unique
+  body      String
+  autoSend  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("message_templates")
+}
+
 model AuditLog {
   id        String   @id @default(cuid())
   action    String

@@ -32,6 +32,7 @@ router.post(
   orderCtrl.addPayment
 );
 
+router.get('/:id/whatsapp/preview', orderCtrl.previewWhatsApp);
 router.post('/:id/whatsapp', orderCtrl.sendWhatsApp);
 router.get('/:id/pdf', orderCtrl.downloadPdf);
 router.delete('/:id', orderCtrl.remove);

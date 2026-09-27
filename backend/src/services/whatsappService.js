@@ -103,32 +103,3 @@ export async function sendMessage(to, message) {
     return { success: false, error: msg || 'Error al enviar WhatsApp' };
   }
 }
-
-export function orderStatusMessage(order) {
-  const statusLabels = {
-    PENDING: 'Pendiente',
-    DIAGNOSING: 'Diagnosticando',
-    IN_PROGRESS: 'En reparación',
-    WAITING_PARTS: 'Esperando piezas',
-    READY_FOR_PICKUP: 'Listo para retirar',
-    COMPLETED: 'Completado',
-    DELIVERED: 'Entregado',
-    CANCELLED: 'Cancelado',
-  };
-
-  const lines = [
-    '🔧 *TALLER DE REPARACIÓN*',
-    '',
-    `Hola *${order.client.name}*,`,
-    '',
-    `Tu orden *#${order.orderNumber}* ha cambiado de estado:`,
-    '',
-    `📌 *Estado:* ${statusLabels[order.status] || order.status}`,
-    ``,
-    `Equipo: ${order.equipment.brand} ${order.equipment.model}`,
-    '',
-    'Gracias por confiar en nosotros.',
-  ];
-
-  return lines.join('\n');
-}

@@ -2,7 +2,8 @@ import { prisma } from '../index.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { generateOrderNumber } from '../utils/orderNumber.js';
 import { createAuditLog } from '../utils/audit.js';
-import { sendMessage, orderStatusMessage } from '../services/whatsappService.js';
+import { sendMessage } from '../services/whatsappService.js';
+import { getTemplate, renderTemplate } from '../services/templateService.js';
 import { generateRepairOrderPDF } from '../services/pdfService.js';
 import { STATUS_LABELS } from '../config/constants.js';
 
@@ -131,12 +132,17 @@ export async function updateStatus(req, res, next) {
       }),
     ]);
 
+    let whatsappSent = false;
     if (updated.client?.phone) {
-      const message = orderStatusMessage(updated);
-      sendMessage(updated.client.phone, message);
+      const template = await getTemplate(status);
+      if (template.autoSend) {
+        const message = renderTemplate(template.body, updated, order.status);
+        const result = await sendMessage(updated.client.phone, message);
+        whatsappSent = Boolean(result.success);
+      }
     }
 
-    res.json({ data: updated });
+    res.json({ data: updated, whatsappSent });
   } catch (err) {
     next(err);
   }
@@ -200,6 +206,35 @@ export async function addPayment(req, res, next) {
   }
 }
 
+export async function previewWhatsApp(req, res, next) {
+  try {
+    const order = await prisma.repairOrder.findUnique({
+      where: { id: req.params.id },
+      include: { client: true, equipment: true },
+    });
+    if (!order) throw new AppError('Orden no encontrada', 404);
+
+    const status = req.query.status || order.status;
+    const template = await getTemplate(status);
+    const previous = await prisma.statusHistory.findFirst({
+      where: { repairOrderId: order.id },
+      orderBy: { createdAt: 'desc' },
+      skip: 1,
+    });
+
+    res.json({
+      data: {
+        status,
+        to: order.client?.phone || '',
+        autoSend: template.autoSend,
+        rendered: renderTemplate(template.body, { ...order, status }, previous?.status),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function sendWhatsApp(req, res, next) {
   try {
     const order = await prisma.repairOrder.findUnique({
@@ -211,14 +246,19 @@ export async function sendWhatsApp(req, res, next) {
     const to = order.client.phone;
     if (!to) throw new AppError('El cliente no tiene teléfono registrado', 400);
 
-    const message = orderStatusMessage(order);
+    const custom = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+    const template = await getTemplate(order.status);
+    const message = custom || renderTemplate(template.body, order);
+
+    if (!message) throw new AppError('El mensaje está vacío', 400);
+
     const result = await sendMessage(to, message);
 
     if (!result.success) {
       throw new AppError(result.error || 'Error al enviar WhatsApp', 500);
     }
 
-    res.json({ success: true, id: result.id });
+    res.json({ success: true, id: result.id, sent: message });
   } catch (err) {
     next(err);
   }

@@ -1,6 +1,11 @@
 # Avances - Gestor Taller
 
-## Fecha: 27/05/2026
+Registro cronológico de los cambios del proyecto, de lo más antiguo a lo más reciente.
+Cada bloque de trabajo va encabezado por su fecha.
+
+---
+
+## Sesión 27/05/2026
 
 ---
 
@@ -180,6 +185,58 @@ Agregados modales de edición para las tres entidades principales:
 - `Decimal` → `Float`
 - Eliminado `mode: 'insensitive'` (SQLite es case-insensitive por defecto)
 - `DATABASE_URL` → `file:./dev.db`
+
+---
+
+## Sesión 27/09/2026
+
+### 25. Plantillas de mensajes de WhatsApp personalizables
+
+**Objetivo**: Sacar los mensajes del código para que cada taller pueda editarlos sin tocar el backend.
+
+**Base de datos**:
+- Nuevo modelo `MessageTemplate` (`status` único, `body`, `autoSend`)
+- `templateService.js` trae un mensaje por defecto para cada estado; si no hay fila en la DB usa ese
+- Las filas se crean solo cuando el usuario edita o cambia el switch, así que una instalación nueva
+  arranca con los textos originales
+
+**Variables**: `{{cliente}}`, `{{orden}}`, `{{estado}}`, `{{estado_anterior}}`, `{{equipo}}`,
+`{{tipo_equipo}}`, `{{problema}}`, `{{diagnostico}}`, `{{presupuesto}}`, `{{costo}}`, `{{abono}}`,
+`{{saldo}}`, `{{fecha}}`, `{{notas}}`. Las variables desconocidas se dejan tal cual, para no perder texto.
+
+**Envío automático**: switch por estado. `PENDING` y `DIAGNOSING` vienen apagados por defecto
+(son estados internos del taller); el resto encendido.
+
+**Envío manual**: el botón "Enviar WhatsApp" de la orden ahora abre un modal con el mensaje
+precargado y editable antes de enviar. Permite elegir otra plantilla para avisarle al cliente
+antes de cambiar el estado de la orden.
+
+**Endpoints nuevos**:
+- `GET /api/whatsapp/templates` — plantillas + lista de variables
+- `PUT /api/whatsapp/templates/:status` — guardar
+- `POST /api/whatsapp/templates/preview` — render con datos de ejemplo
+- `GET /api/orders/:id/whatsapp/preview` — render con los datos de una orden real
+
+`updateStatus` ahora responde `whatsappSent` para que el toast diga si el cliente fue notificado.
+
+### 26. Corrección del switch de envío automático
+
+**Problema**: Al mover el switch, el círculo blanco se salía de la píldora por el lado derecho.
+
+**Causa**: El `<span>` del círculo estaba posicionado solo con `absolute top-0.5`, sin `left`. Sin
+`left`, el navegador lo coloca en su posición estática, que depende del padding por defecto del
+`<button>` (`1px 6px`). Sumando `translate-x-5` el círculo terminaba en 46px dentro de una píldora de
+44px, así que se salía.
+
+**Solución** (`components/whatsapp/MessageTemplates.jsx`):
+- `left-0.5` explícito → posición determinista, independiente del padding del navegador
+- `overflow-hidden` en la píldora → el círculo no puede salirse
+- `h-6 w-11` en orden fijo + `flex-shrink-0` → no se deforma dentro del `flex` de la fila
+- `duration-200` en la transición → movimiento más suave
+- Colores sin cambios: gris `secondary-300` apagado, azul `primary-600` encendido
+
+**También en esta sesión**: se reorganizó `ROADMAP.md` contrastando cada punto contra el código, y se
+documentaron en el README los endpoints y variables de las plantillas.
 
 ---
 

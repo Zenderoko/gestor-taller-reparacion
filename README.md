@@ -141,16 +141,20 @@ APP_URL=http://localhost:3001         # IP o dominio público
 | PUT    | /api/orders/:id           | Actualizar orden         |
 | PUT    | /api/orders/:id/status    | Cambiar estado           |
 | POST   | /api/orders/:id/payments  | Registrar pago           |
-| POST   | /api/orders/:id/whatsapp  | Enviar WhatsApp          |
 | GET    | /api/orders/:id/pdf       | Descargar PDF            |
 | DELETE | /api/orders/:id           | Eliminar orden           |
 | PUT    | /api/orders/:id/archive   | Archivar orden           |
 | PUT    | /api/orders/:id/unarchive | Restaurar orden          |
+| GET    | /api/orders/:id/whatsapp/preview | Renderizar plantilla para una orden |
+| POST   | /api/orders/:id/whatsapp  | Enviar WhatsApp          |
 | GET    | /api/dashboard/stats      | Estadísticas dashboard   |
 | GET    | /api/users/me             | Usuario actual           |
 | GET    | /api/users                | Listar usuarios          |
 | GET    | /api/whatsapp/status      | Estado conexión WhatsApp |
 | POST   | /api/whatsapp/connect     | Conectar WhatsApp (QR)   |
+| GET    | /api/whatsapp/templates   | Listar plantillas de mensaje |
+| PUT    | /api/whatsapp/templates/:status | Guardar plantilla    |
+| POST   | /api/whatsapp/templates/preview | Vista previa con datos de ejemplo |
 | GET    | /api/health               | Health check             |
 
 ## Flujo de estados de reparación
@@ -171,7 +175,35 @@ PENDING → DIAGNOSING → IN_PROGRESS → READY_FOR_PICKUP → COMPLETED → DE
 - **RepairOrder** - Órdenes de reparación
 - **StatusHistory** - Trazabilidad de cambios de estado
 - **Payment** - Pagos registrados
+- **MessageTemplate** - Plantillas de WhatsApp por estado (editables desde la UI)
 - **AuditLog** - Log de auditoría
+
+## Plantillas de mensajes de WhatsApp
+
+Cada estado de reparación tiene su propio mensaje, editable en **WhatsApp → Plantillas de mensajes**.
+El sistema trae uno por defecto que se usa si nunca lo editas.
+
+Variables disponibles dentro del mensaje:
+
+| Variable            | Contenido                        |
+|---------------------|----------------------------------|
+| `{{cliente}}`       | Nombre del cliente               |
+| `{{orden}}`         | Número de orden                   |
+| `{{estado}}`        | Estado actual de la orden         |
+| `{{estado_anterior}}` | Estado previo                  |
+| `{{equipo}}`        | Marca y modelo                    |
+| `{{tipo_equipo}}`   | Tipo de equipo                    |
+| `{{problema}}`      | Problema reportado                |
+| `{{diagnostico}}`   | Diagnóstico del técnico           |
+| `{{presupuesto}}`   | Presupuesto estimado (CLP)        |
+| `{{costo}}`         | Costo final (CLP)                 |
+| `{{abono}}`         | Abono pagado (CLP)                |
+| `{{saldo}}`         | Saldo pendiente (CLP)             |
+| `{{fecha}}`         | Fecha de actualización            |
+| `{{notas}}`         | Notas de la orden                 |
+
+En WhatsApp, `*texto*` produce negrita. El switch por estado define si la notificación se envía
+automáticamente al cambiar el estado o solo de forma manual desde la orden.
 
 ## Despliegue en NAS con auto-inicio
 

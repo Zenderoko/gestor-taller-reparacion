@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { whatsappApi } from '@/lib/api';
 import { MessageCircle, RefreshCw, CheckCircle, XCircle, Loader } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import MessageTemplates from '@/components/whatsapp/MessageTemplates';
 import toast from 'react-hot-toast';
 
 const STATUS_MAP = {
@@ -42,11 +43,11 @@ export default function WhatsAppSettings() {
   }
 
   return (
-    <div className="page-container max-w-lg">
+    <div className="page-container max-w-3xl">
       <div className="page-header">
         <div>
           <h1 className="page-title">WhatsApp</h1>
-          <p className="page-subtitle">Conecta tu WhatsApp para enviar notificaciones</p>
+          <p className="page-subtitle">Conecta tu WhatsApp y personaliza los mensajes a tus clientes</p>
         </div>
       </div>
 
@@ -101,6 +102,8 @@ export default function WhatsAppSettings() {
           </Button>
         </div>
       )}
+
+      <MessageTemplates />
     </div>
   );
 }

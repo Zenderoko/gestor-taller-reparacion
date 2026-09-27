@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi } from '@/lib/api';
@@ -24,6 +24,10 @@ export default function OrderDetail() {
   const [statusModal, setStatusModal] = useState(false);
   const [paymentModal, setPaymentModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
+  const [whatsappModal, setWhatsappModal] = useState(false);
+  const [whatsappMessage, setWhatsappMessage] = useState('');
+  const [whatsappTo, setWhatsappTo] = useState('');
+  const [whatsappTemplate, setWhatsappTemplate] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -36,15 +40,39 @@ export default function OrderDetail() {
     queryFn: () => ordersApi.getById(id),
   });
 
+  const whatsappPreview = useQuery({
+    queryKey: ['order-whatsapp-preview', id, whatsappTemplate],
+    queryFn: () => ordersApi.previewWhatsApp(id, whatsappTemplate || undefined),
+    enabled: whatsappModal,
+  });
+
+  useEffect(() => {
+    const preview = whatsappPreview.data?.data;
+    if (whatsappModal && preview) {
+      setWhatsappMessage(preview.rendered);
+      setWhatsappTo(preview.to);
+    }
+  }, [whatsappPreview.data, whatsappModal]);
+
   const statusMutation = useMutation({
     mutationFn: (data) => ordersApi.updateStatus(id, data),
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['order', id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      toast.success('Estado actualizado');
+      toast.success(res?.whatsappSent ? 'Estado actualizado y cliente notificado' : 'Estado actualizado');
       setStatusModal(false);
     },
     onError: (err) => toast.error(err.message),
+  });
+
+  const sendWhatsAppMutation = useMutation({
+    mutationFn: (message) => ordersApi.sendWhatsApp(id, message),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order-whatsapp-preview', id] });
+      toast.success('WhatsApp enviado al cliente');
+      setWhatsappModal(false);
+    },
+    onError: (err) => toast.error(err.message || 'Error al enviar WhatsApp. Revisa la conexión en la sección WhatsApp.'),
   });
 
   const paymentMutation = useMutation({
@@ -281,13 +309,11 @@ export default function OrderDetail() {
               </Button>
               <Button
                 variant="secondary" size="sm" className="w-full"
-                onClick={async () => {
-                  try {
-                    await ordersApi.sendWhatsApp(order.id);
-                    toast.success('WhatsApp enviado al cliente');
-                  } catch (err) {
-                    toast.error(err.message || 'Error al enviar WhatsApp. Revisa la conexión en la sección WhatsApp.');
-                  }
+                onClick={() => {
+                  setWhatsappTemplate('');
+                  setWhatsappMessage('');
+                  setWhatsappTo('');
+                  setWhatsappModal(true);
                 }}
               >
                 <Send className="w-4 h-4" /> Enviar WhatsApp
@@ -444,6 +470,51 @@ export default function OrderDetail() {
             <Button type="submit" loading={isSubmitting || editMutation.isPending}>Guardar</Button>
           </div>
         </form>
+      </Modal>
+      <Modal open={whatsappModal} onClose={() => setWhatsappModal(false)} title="Enviar WhatsApp" size="lg">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-secondary-700 mb-1">Plantilla</label>
+            <Select
+              options={[
+                { value: '', label: `Estado actual: ${STATUS_LABELS[order.status]}` },
+                ...ALL_STATUSES.filter(([value]) => value !== order.status).map(([value, label]) => ({ value, label })),
+              ]}
+              value={whatsappTemplate}
+              onChange={(e) => setWhatsappTemplate(e.target.value)}
+            />
+            <p className="text-xs text-secondary-400 mt-1">
+              Elige otra plantilla para avisarle al cliente antes de cambiar el estado de la orden.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-secondary-700 mb-1">
+              Mensaje {whatsappTo && <span className="font-normal text-secondary-400">→ {whatsappTo}</span>}
+            </label>
+            {whatsappPreview.isLoading ? (
+              <Loader />
+            ) : (
+              <textarea
+                rows={12}
+                className="block w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={whatsappMessage}
+                onChange={(e) => setWhatsappMessage(e.target.value)}
+              />
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setWhatsappModal(false)}>Cancelar</Button>
+            <Button
+              onClick={() => sendWhatsAppMutation.mutate(whatsappMessage)}
+              loading={sendWhatsAppMutation.isPending}
+              disabled={!whatsappMessage.trim()}
+            >
+              <Send className="w-4 h-4" /> Enviar
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

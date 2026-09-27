@@ -4,7 +4,7 @@ import { STATUS_LABELS } from '@/lib/constants';
 const COLORS = {
   PENDING: '#eab308',
   DIAGNOSING: '#3b82f6',
-  IN_PROGRESS: '#6366f1',
+  IN_PROGRESS: '#4f46e5',
   WAITING_PARTS: '#f97316',
   READY_FOR_PICKUP: '#22c55e',
   COMPLETED: '#10b981',

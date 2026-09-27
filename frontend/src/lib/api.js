@@ -55,7 +55,8 @@ export const ordersApi = {
   update: (id, data) => api.put(`/orders/${id}`, data),
   updateStatus: (id, data) => api.put(`/orders/${id}/status`, data),
   addPayment: (id, data) => api.post(`/orders/${id}/payments`, data),
-  sendWhatsApp: (id) => api.post(`/orders/${id}/whatsapp`),
+  sendWhatsApp: (id, message) => api.post(`/orders/${id}/whatsapp`, { message }),
+  previewWhatsApp: (id, status) => api.get(`/orders/${id}/whatsapp/preview`, { params: { status } }),
   downloadPdf: (id) => api.get(`/orders/${id}/pdf`, { responseType: 'blob' }),
   archive: (id) => api.put(`/orders/${id}/archive`),
   unarchive: (id) => api.put(`/orders/${id}/unarchive`),
@@ -83,4 +84,7 @@ export const authApi = {
 export const whatsappApi = {
   getStatus: () => api.get('/whatsapp/status'),
   connect: () => api.post('/whatsapp/connect'),
+  getTemplates: () => api.get('/whatsapp/templates'),
+  updateTemplate: (status, data) => api.put(`/whatsapp/templates/${status}`, data),
+  previewTemplate: (data) => api.post('/whatsapp/templates/preview', data),
 };
